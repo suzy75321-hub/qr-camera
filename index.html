@@ -2,6 +2,7 @@
 <html lang="ko">
 
 <head>
+
   <meta charset="UTF-8">
 
   <meta
@@ -11,7 +12,9 @@
 
   <title>QR 인증</title>
 
+  <!-- QR 인식 라이브러리 -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
 
   <style>
 
@@ -23,10 +26,7 @@
       margin: 0;
       padding: 20px;
       background: #f5f7fb;
-      font-family:
-        Arial,
-        "Noto Sans KR",
-        sans-serif;
+      font-family: Arial, "Noto Sans KR", sans-serif;
       text-align: center;
     }
 
@@ -37,8 +37,7 @@
       padding: 28px 20px 30px;
       background: white;
       border-radius: 22px;
-      box-shadow:
-        0 4px 18px rgba(0,0,0,0.08);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
     }
 
     h1 {
@@ -50,15 +49,6 @@
       color: #555;
       line-height: 1.6;
       margin-bottom: 20px;
-    }
-
-    .student {
-      background: #eef5ff;
-      padding: 15px;
-      border-radius: 14px;
-      margin: 15px 0;
-      line-height: 1.6;
-      font-weight: bold;
     }
 
     .notice {
@@ -131,39 +121,19 @@
   </div>
 
 
-  <!-- 학생 정보 -->
+  <div class="notice">
 
-  <div
-    id="studentBox"
-    class="student hidden"
-  >
-    <span id="studentInfo"></span>
-    <br>
-    <span id="actionInfo"></span>
+    📷 아래 버튼을 누르면<br>
+    카메라 권한을 요청합니다.
+
   </div>
 
-
-  <!-- 안내 -->
-
-  <div
-    id="directNotice"
-    class="notice hidden"
-  >
-    우리반 앱에서 전달된 출결 정보가 없습니다.<br><br>
-
-    <b>카메라 테스트를 위해서는 아래 버튼을 눌러주세요.</b>
-  </div>
-
-
-  <!-- 카메라 -->
 
   <div
     id="reader"
     class="hidden"
   ></div>
 
-
-  <!-- 시작 -->
 
   <button
     id="startButton"
@@ -173,8 +143,6 @@
     📷 카메라 시작
   </button>
 
-
-  <!-- 취소 -->
 
   <button
     id="cancelButton"
@@ -192,9 +160,10 @@
 
 <script>
 
-/* ========================================
-   전역 변수
-======================================== */
+
+// ========================================
+// 전역 변수
+// ========================================
 
 let scanner = null;
 
@@ -203,75 +172,9 @@ let scanning = false;
 let lastQr = "";
 
 
-/* ========================================
-   URL 파라미터
-======================================== */
-
-const params =
-  new URLSearchParams(
-    window.location.search
-  );
-
-
-const studentNumber =
-  params.get("studentNumber") || "";
-
-
-const studentName =
-  params.get("studentName") || "";
-
-
-const action =
-  params.get("action") || "";
-
-
-/* ========================================
-   시작할 때 화면 구성
-======================================== */
-
-window.addEventListener(
-  "DOMContentLoaded",
-  function() {
-
-    if (
-      studentNumber &&
-      studentName &&
-      action
-    ) {
-
-      document
-        .getElementById("studentBox")
-        .classList
-        .remove("hidden");
-
-      document
-        .getElementById("studentInfo")
-        .innerText =
-          studentNumber +
-          " " +
-          studentName;
-
-      document
-        .getElementById("actionInfo")
-        .innerText =
-          action;
-
-    } else {
-
-      document
-        .getElementById("directNotice")
-        .classList
-        .remove("hidden");
-
-    }
-
-  }
-);
-
-
-/* ========================================
-   메시지
-======================================== */
+// ========================================
+// 메시지
+// ========================================
 
 function showMessage(
   message,
@@ -279,9 +182,7 @@ function showMessage(
 ) {
 
   const element =
-    document.getElementById(
-      "message"
-    );
+    document.getElementById("message");
 
   element.innerText =
     message;
@@ -292,9 +193,9 @@ function showMessage(
 }
 
 
-/* ========================================
-   카메라 시작
-======================================== */
+// ========================================
+// 카메라 시작
+// ========================================
 
 async function startCamera() {
 
@@ -303,37 +204,59 @@ async function startCamera() {
   );
 
 
-  /*
-   * 먼저 브라우저에
-   * 카메라 권한을 직접 요청한다.
-   */
+  // ----------------------------------------
+  // 브라우저 카메라 권한 확인
+  // ----------------------------------------
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
+
+    showMessage(
+      "❌ 이 브라우저에서는 카메라 기능을 사용할 수 없습니다.\n\n" +
+      "HTTPS 페이지에서 다시 시도해주세요.",
+      "error"
+    );
+
+    return;
+
+  }
+
 
   try {
 
+    /*
+     * 카메라 권한 요청
+     *
+     * facingMode는 반드시 문자열로 사용
+     */
+
     const stream =
-      await navigator.mediaDevices.getUserMedia(
-        {
-          video: {
-            facingMode: {
-              ideal: "environment"
-            }
-          },
-          audio: false
-        }
-      );
+      await navigator.mediaDevices.getUserMedia({
+
+        video: {
+          facingMode: "environment"
+        },
+
+        audio: false
+
+      });
 
 
     /*
-     * 권한 확인용으로 잠깐 열었다가
-     * QR 스캐너가 다시 카메라를 사용하도록
-     * 스트림을 종료한다.
+     * 권한 확인 완료.
+     * 실제 QR 스캐너가 카메라를 다시 사용하므로
+     * 여기서 임시 스트림은 종료한다.
      */
 
     stream
       .getTracks()
       .forEach(
         function(track) {
+
           track.stop();
+
         }
       );
 
@@ -347,21 +270,29 @@ async function startCamera() {
 
 
     showMessage(
-      "❌ 카메라에 접근할 수 없습니다.\n\n" +
-      "브라우저의 카메라 권한이 허용되어 있는지 확인해주세요.\n\n" +
+
+      "❌ 카메라 접근에 실패했습니다.\n\n" +
+
+      "브라우저의 카메라 권한을 확인해주세요.\n\n" +
+
       "오류: " +
-      error.name,
+      error.name +
+      "\n" +
+      error.message,
+
       "error"
+
     );
+
 
     return;
 
   }
 
 
-  /*
-   * 실제 QR 스캐너 시작
-   */
+  // ----------------------------------------
+  // 화면 변경
+  // ----------------------------------------
 
   document
     .getElementById("startButton")
@@ -380,14 +311,18 @@ async function startCamera() {
   );
 
 
+  // ----------------------------------------
+  // QR 스캐너 시작
+  // ----------------------------------------
+
   startQrScanner();
 
 }
 
 
-/* ========================================
-   QR 스캐너
-======================================== */
+// ========================================
+// QR 스캐너 시작
+// ========================================
 
 function startQrScanner() {
 
@@ -407,7 +342,9 @@ function startQrScanner() {
 
 
   if (scanning) {
+
     return;
+
   }
 
 
@@ -429,7 +366,9 @@ function startQrScanner() {
     aspectRatio: 1.0,
 
     formatsToSupport: [
+
       Html5QrcodeSupportedFormats.QR_CODE
+
     ]
 
   };
@@ -442,12 +381,11 @@ function startQrScanner() {
     .start(
 
       {
-        facingMode: {
-          ideal: "environment"
-        }
+        facingMode: "environment"
       },
 
       scannerConfig,
+
 
       function(decodedText) {
 
@@ -470,16 +408,16 @@ function startQrScanner() {
 
       },
 
+
       function() {
 
-        /*
-         * QR을 찾는 동안에는
-         * 별도 메시지를 표시하지 않는다.
-         */
+        // QR을 찾는 동안에는
+        // 별도 메시지를 표시하지 않는다.
 
       }
 
     )
+
 
     .catch(
       function(error) {
@@ -489,18 +427,26 @@ function startQrScanner() {
           error
         );
 
+
         scanning = false;
 
+
         showMessage(
-          "❌ 카메라를 시작하지 못했습니다.\n\n" +
+
+          "❌ QR 카메라를 시작하지 못했습니다.\n\n" +
+
           String(error),
+
           "error"
+
         );
+
 
         document
           .getElementById("reader")
           .classList
           .add("hidden");
+
 
         document
           .getElementById("startButton")
@@ -513,75 +459,46 @@ function startQrScanner() {
 }
 
 
-/* ========================================
-   QR 촬영 성공
-======================================== */
+// ========================================
+// QR 인식 성공
+// ========================================
 
 async function handleQrSuccess(
   decodedText
 ) {
 
   showMessage(
-    "✅ QR을 읽었습니다.\n\n인증을 확인하는 중입니다..."
+    "✅ QR을 읽었습니다."
   );
 
 
   await stopScanner();
 
 
-  /*
-   * 현재는 카메라 기능 테스트 단계.
-   *
-   * 학생 정보가 URL로 전달되어 있다면
-   * 다음 단계에서 Apps Script로 보낸다.
-   */
-
-
-  if (
-    !studentNumber ||
-    !studentName ||
-    !action
-  ) {
-
-    showMessage(
-      "✅ 카메라와 QR 촬영이 정상 작동합니다.\n\n" +
-      "QR 값:\n" +
-      decodedText +
-      "\n\n" +
-      "이제 우리반 앱과 연결하면 됩니다.",
-      "success"
-    );
-
-    return;
-
-  }
-
-
-  /*
-   * 실제 인증 연결은
-   * Apps Script doPost 추가 후 연결한다.
-   */
-
   showMessage(
-    "✅ QR 촬영 완료!\n\n" +
-    "학생: " +
-    studentNumber +
-    " " +
-    studentName +
-    "\n" +
-    "상태: " +
-    action +
+
+    "✅ 카메라와 QR 촬영이 정상 작동합니다.\n\n" +
+
+    "QR 인증값:\n" +
+
+    decodedText +
+
     "\n\n" +
-    "다음 단계에서 Apps Script 인증과 연결합니다.",
+
+    "🎉 카메라 테스트 성공!"
+
+    ,
+
     "success"
+
   );
 
 }
 
 
-/* ========================================
-   스캐너 종료
-======================================== */
+// ========================================
+// QR 스캐너 종료
+// ========================================
 
 async function stopScanner() {
 
@@ -629,9 +546,9 @@ async function stopScanner() {
 }
 
 
-/* ========================================
-   뒤로가기
-======================================== */
+// ========================================
+// 뒤로가기
+// ========================================
 
 function goBack() {
 
@@ -658,9 +575,9 @@ function goBack() {
 }
 
 
-/* ========================================
-   페이지 종료
-======================================== */
+// ========================================
+// 페이지 종료
+// ========================================
 
 window.addEventListener(
   "beforeunload",
@@ -678,6 +595,7 @@ window.addEventListener(
 
   }
 );
+
 
 </script>
 
