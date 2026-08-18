@@ -1,449 +1,502 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
+
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    content="width=device-width, initial-scale=1"
   >
 
-  <title>등교 QR 인증</title>
+  <title>QR 카메라</title>
 
-  <!-- QR 카메라 라이브러리 -->
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
+
     * {
       box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                   "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      padding: 20px;
       background: #f5f7fb;
-      color: #222;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 24px 18px 40px;
-    }
-
-    .title {
+      font-family: Arial, sans-serif;
       text-align: center;
-      font-size: 28px;
-      font-weight: 800;
-      margin-top: 20px;
-      margin-bottom: 8px;
+    }
+
+    .box {
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+      padding: 25px 20px 30px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      margin: 5px 0 10px;
+      font-size: 25px;
     }
 
     .subtitle {
-      text-align: center;
       color: #666;
-      font-size: 15px;
-      margin-bottom: 24px;
-    }
-
-    .camera-box {
-      background: white;
-      border-radius: 20px;
-      padding: 14px;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+      margin-bottom: 20px;
+      line-height: 1.5;
     }
 
     #reader {
       width: 100%;
-      overflow: hidden;
-      border-radius: 14px;
+      max-width: 380px;
+      margin: 20px auto;
     }
 
     .status {
-      margin-top: 20px;
-      padding: 16px;
-      border-radius: 14px;
-      background: #eef2ff;
-      text-align: center;
-      font-size: 16px;
+      margin: 15px 0;
+      padding: 14px;
+      border-radius: 12px;
+      background: #eef5ff;
+      font-weight: bold;
       line-height: 1.5;
+      white-space: pre-line;
     }
 
-    .status.success {
-      background: #e8f7ed;
-      color: #176b35;
-    }
-
-    .status.error {
-      background: #fff0f0;
-      color: #b42318;
-    }
-
-    .status.loading {
-      background: #fff8e6;
-      color: #8a5a00;
-    }
-
-    .back-button {
+    .button {
       width: 100%;
-      margin-top: 18px;
-      padding: 15px;
+      padding: 17px;
+      margin-top: 10px;
       border: none;
       border-radius: 14px;
-      background: #333;
-      color: white;
-      font-size: 16px;
-      font-weight: 700;
+      background: #eeeeee;
+      font-size: 17px;
+      font-weight: bold;
       cursor: pointer;
-    }
-
-    .back-button:active {
-      transform: scale(0.98);
     }
 
     .hidden {
       display: none;
     }
 
-    .success-icon {
-      font-size: 50px;
-      margin-bottom: 8px;
-    }
   </style>
+
 </head>
+
 
 <body>
 
-  <div class="container">
 
-    <div class="title">
-      📷 등교 QR 인증
-    </div>
+<div class="box">
 
-    <div class="subtitle">
-      선생님이 보여주는 QR코드를 촬영하세요.
-    </div>
 
-    <div class="camera-box">
-      <div id="reader"></div>
-    </div>
+  <h1>
+    📷 QR 인증
+  </h1>
 
-    <div id="status" class="status">
-      카메라를 준비하고 있습니다...
-    </div>
 
-    <button
-      id="backButton"
-      class="back-button"
-      onclick="goBack()"
-    >
-      돌아가기
-    </button>
-
+  <div
+    id="actionText"
+    class="subtitle"
+  >
+    교실 QR을 촬영해주세요.
   </div>
 
 
-  <script>
-
-    /*
-     * ============================================================
-     * 설정
-     * ============================================================
-     *
-     * 나중에 기존 Apps Script 웹앱 주소를 여기에 넣는다.
-     *
-     * 예:
-     * const GAS_URL = "https://script.google.com/macros/s/XXXXX/exec";
-     *
-     * 지금은 카메라 페이지를 먼저 만드는 단계이므로
-     * 비워 둔다.
-     */
-
-    const GAS_URL = "";
+  <div id="reader"></div>
 
 
-    /*
-     * ============================================================
-     * 화면 요소
-     * ============================================================
-     */
-
-    const statusBox = document.getElementById("status");
-
-    let scanner = null;
-    let scanFinished = false;
+  <div
+    id="status"
+    class="status"
+  >
+    카메라를 준비하고 있습니다...
+  </div>
 
 
-    /*
-     * ============================================================
-     * 상태 메시지
-     * ============================================================
-     */
-
-    function setStatus(message, type = "") {
-
-      statusBox.textContent = message;
-
-      statusBox.className = "status";
-
-      if (type) {
-        statusBox.classList.add(type);
-      }
-    }
+  <button
+    id="cancelButton"
+    class="button"
+    onclick="goBack()"
+  >
+    취소하고 돌아가기
+  </button>
 
 
-    /*
-     * ============================================================
-     * QR 촬영 성공
-     * ============================================================
-     */
+</div>
 
-    async function onScanSuccess(decodedText, decodedResult) {
 
-      // 이미 처리했다면 중복 실행 방지
-      if (scanFinished) {
-        return;
-      }
+<script>
 
-      scanFinished = true;
 
-      console.log("QR 촬영:", decodedText);
+// ========================================
+// URL에서 전달받은 정보
+// ========================================
 
-      setStatus(
-        "QR을 확인했습니다.\n등교 인증을 처리하고 있습니다...",
-        "loading"
+const params =
+  new URLSearchParams(
+    window.location.search
+  );
+
+
+const appUrl =
+  params.get("app");
+
+
+const studentNumber =
+  params.get("number");
+
+
+const studentName =
+  params.get("name");
+
+
+const action =
+  params.get("action");
+
+
+// ========================================
+// 스캐너
+// ========================================
+
+let scanner = null;
+
+let scanFinished = false;
+
+
+// ========================================
+// 상태 표시
+// ========================================
+
+function setStatus(
+  message
+) {
+
+  document
+    .getElementById("status")
+    .innerText =
+      message;
+
+}
+
+
+// ========================================
+// 전달받은 정보 확인
+// ========================================
+
+function checkParameters() {
+
+  if (
+    !appUrl ||
+    !studentNumber ||
+    !studentName ||
+    !action
+  ) {
+
+    setStatus(
+      "❌ 잘못된 접근입니다.\n" +
+      "우리반 앱에서 다시 시작해주세요."
+    );
+
+    return false;
+
+  }
+
+
+  document
+    .getElementById("actionText")
+    .innerText =
+      studentName +
+      " 학생\n" +
+      action +
+      "\n\n교실 QR을 촬영해주세요.";
+
+
+  return true;
+
+}
+
+
+// ========================================
+// QR 촬영 성공
+// ========================================
+
+function onScanSuccess(
+  decodedText
+) {
+
+  if (scanFinished) {
+    return;
+  }
+
+
+  scanFinished = true;
+
+
+  setStatus(
+    "✅ QR을 확인했습니다.\n" +
+    "기록을 처리하고 있습니다..."
+  );
+
+
+  stopScanner()
+    .then(function() {
+
+      return goToApp(
+        decodedText
       );
-
-      // 카메라 정지
-      if (scanner) {
-
-        try {
-          await scanner.stop();
-        } catch (error) {
-          console.log("카메라 정지:", error);
-        }
-      }
-
-
-      /*
-       * 아직 Apps Script 주소가 연결되지 않은 상태
-       */
-
-      if (!GAS_URL) {
-
-        setStatus(
-          "카메라 촬영은 성공했습니다.\n\n" +
-          "다음 단계에서 Apps Script와 연결합니다.\n\n" +
-          "QR 값: " + decodedText,
-          "success"
-        );
-
-        return;
-      }
-
-
-      /*
-       * ========================================================
-       * Apps Script로 QR값 전송
-       * ========================================================
-       */
-
-      try {
-
-        const url =
-          GAS_URL +
-          "?action=verifyQR" +
-          "&qr=" +
-          encodeURIComponent(decodedText);
-
-
-        const response = await fetch(url, {
-          method: "GET"
-        });
-
-
-        if (!response.ok) {
-          throw new Error("서버 응답 오류");
-        }
-
-
-        const result = await response.json();
-
-        console.log("서버 응답:", result);
-
-
-        /*
-         * 승인
-         */
-
-        if (result.success) {
-
-          setStatus(
-            "✅ 등교 인증 완료!\n\n" +
-            (result.message || "정상적으로 기록되었습니다."),
-            "success"
-          );
-
-        }
-
-
-        /*
-         * QR 불일치
-         */
-
-        else {
-
-          setStatus(
-            "❌ 인증 실패\n\n" +
-            (result.message || "올바른 QR코드가 아닙니다."),
-            "error"
-          );
-
-          scanFinished = false;
-
-          startScanner();
-        }
-
-      } catch (error) {
-
-        console.error(error);
-
-        setStatus(
-          "❌ 서버와 연결하지 못했습니다.\n\n" +
-          "잠시 후 다시 시도해주세요.",
-          "error"
-        );
-
-        scanFinished = false;
-
-        startScanner();
-      }
-    }
-
-
-    /*
-     * ============================================================
-     * QR 촬영 실패
-     * ============================================================
-     *
-     * QR이 화면에 잡히지 않는 것은 정상이다.
-     * 계속 촬영하면서 QR을 찾는다.
-     */
-
-    function onScanFailure(error) {
-      // 아무것도 하지 않음
-    }
-
-
-    /*
-     * ============================================================
-     * 카메라 시작
-     * ============================================================
-     */
-
-    function startScanner() {
-
-      scanFinished = false;
-
-      setStatus(
-        "카메라를 시작합니다...\nQR코드를 화면 안에 맞춰주세요."
-      );
-
-
-      scanner = new Html5Qrcode("reader");
-
-
-      const config = {
-        fps: 10,
-
-        qrbox: function(viewfinderWidth, viewfinderHeight) {
-
-          const minEdge = Math.min(
-            viewfinderWidth,
-            viewfinderHeight
-          );
-
-          const boxSize = Math.floor(minEdge * 0.7);
-
-          return {
-            width: boxSize,
-            height: boxSize
-          };
-        },
-
-        aspectRatio: 1.0
-      };
-
-
-      /*
-       * 후면 카메라 우선
-       */
-
-      scanner
-        .start(
-          {
-            facingMode: "environment"
-          },
-
-          config,
-
-          onScanSuccess,
-
-          onScanFailure
-        )
-
-        .then(() => {
-
-          setStatus(
-            "📷 QR코드를 촬영해주세요."
-          );
-
-        })
-
-        .catch((error) => {
-
-          console.error(error);
-
-          setStatus(
-            "카메라를 사용할 수 없습니다.\n\n" +
-            "브라우저의 카메라 권한을 허용해주세요.",
-            "error"
-          );
-
-        });
-    }
-
-
-    /*
-     * ============================================================
-     * 뒤로가기
-     * ============================================================
-     */
-
-    function goBack() {
-
-      if (document.referrer) {
-        history.back();
-      } else {
-        window.close();
-      }
-    }
-
-
-    /*
-     * ============================================================
-     * 페이지 시작
-     * ============================================================
-     */
-
-    window.addEventListener("load", function() {
-
-      startScanner();
 
     });
 
-  </script>
+}
+
+
+// ========================================
+// Apps Script로 돌아가기
+// ========================================
+
+function goToApp(
+  qrToken
+) {
+
+  const returnParams =
+    new URLSearchParams();
+
+
+  returnParams.set(
+    "qr",
+    qrToken
+  );
+
+
+  returnParams.set(
+    "number",
+    studentNumber
+  );
+
+
+  returnParams.set(
+    "name",
+    studentName
+  );
+
+
+  returnParams.set(
+    "action",
+    action
+  );
+
+
+  const returnUrl =
+    appUrl +
+    "?" +
+    returnParams.toString();
+
+
+  window.location.href =
+    returnUrl;
+
+}
+
+
+// ========================================
+// QR 읽기 실패
+// ========================================
+
+function onScanFailure() {
+
+  // QR을 찾지 못하는 동안에는
+  // 아무 메시지도 변경하지 않음
+
+}
+
+
+// ========================================
+// 카메라 시작
+// ========================================
+
+function startScanner() {
+
+  if (
+    typeof Html5Qrcode ===
+    "undefined"
+  ) {
+
+    setStatus(
+      "❌ QR 스캐너를 불러오지 못했습니다."
+    );
+
+    return;
+
+  }
+
+
+  scanner =
+    new Html5Qrcode(
+      "reader"
+    );
+
+
+  const scannerConfig = {
+
+    fps: 10,
+
+    qrbox: {
+      width: 250,
+      height: 250
+    },
+
+    aspectRatio: 1.0,
+
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.QR_CODE
+    ]
+
+  };
+
+
+  scanner
+    .start(
+
+      {
+        facingMode: "environment"
+      },
+
+      scannerConfig,
+
+      onScanSuccess,
+
+      onScanFailure
+
+    )
+
+    .then(function() {
+
+      setStatus(
+        "📷 QR코드를 카메라 안에 맞춰주세요."
+      );
+
+    })
+
+    .catch(function(error) {
+
+      console.error(error);
+
+
+      setStatus(
+        "❌ 카메라를 사용할 수 없습니다.\n\n" +
+        "브라우저의 카메라 권한을 허용해주세요."
+      );
+
+    });
+
+}
+
+
+// ========================================
+// 스캐너 종료
+// ========================================
+
+function stopScanner() {
+
+  if (!scanner) {
+
+    return Promise.resolve();
+
+  }
+
+
+  return scanner
+    .stop()
+
+    .then(function() {
+
+      scanner.clear();
+
+      scanner = null;
+
+    })
+
+    .catch(function() {
+
+      scanner = null;
+
+    });
+
+}
+
+
+// ========================================
+// 취소
+// ========================================
+
+function goBack() {
+
+  stopScanner()
+    .then(function() {
+
+      if (appUrl) {
+
+        const returnParams =
+          new URLSearchParams();
+
+
+        returnParams.set(
+          "number",
+          studentNumber || ""
+        );
+
+
+        returnParams.set(
+          "name",
+          studentName || ""
+        );
+
+
+        window.location.href =
+          appUrl +
+          "?" +
+          returnParams.toString();
+
+      } else {
+
+        history.back();
+
+      }
+
+    });
+
+}
+
+
+// ========================================
+// 페이지 시작
+// ========================================
+
+window.addEventListener(
+  "load",
+  function() {
+
+    if (
+      !checkParameters()
+    ) {
+
+      return;
+
+    }
+
+
+    startScanner();
+
+  }
+);
+
+
+</script>
+
 
 </body>
+
 </html>
