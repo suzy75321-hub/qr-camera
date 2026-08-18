@@ -64,7 +64,6 @@ button {
 
 </head>
 
-
 <body>
 
 <div class="box">
@@ -73,32 +72,26 @@ button {
 
 <div class="info">
 교실 QR을 촬영해주세요.<br>
-QR을 촬영한 시간이<br>
+QR 촬영 시간이<br>
 실제 등교/복귀 시간으로 기록됩니다.
 </div>
 
-
 <div id="studentInfo"></div>
-
 
 <button onclick="startCamera()">
 📷 카메라 시작
 </button>
 
-
 <div id="reader"></div>
-
 
 <div id="result"></div>
 
 <div id="error"></div>
 
-
 </div>
 
 
 <script>
-
 
 const params =
 new URLSearchParams(location.search);
@@ -107,17 +100,11 @@ new URLSearchParams(location.search);
 const studentNumber =
 params.get("studentNumber") || "";
 
-
 const studentName =
 params.get("studentName") || "";
 
-
 const action =
 params.get("action") || "";
-
-
-const returnUrl =
-params.get("returnUrl") || "";
 
 
 document.getElementById("studentInfo").innerHTML =
@@ -127,18 +114,16 @@ document.getElementById("studentInfo").innerHTML =
 `;
 
 
-
 let html5QrCode = null;
 
 
 
 async function startCamera(){
 
-
   document.getElementById("error").innerText="";
 
 
-  try {
+  try{
 
 
     html5QrCode =
@@ -151,36 +136,34 @@ async function startCamera(){
 
 
 
-    if(!cameras || cameras.length===0){
+    if(!cameras || cameras.length === 0){
 
       throw new Error(
-        "사용 가능한 카메라가 없습니다."
+        "카메라를 찾을 수 없습니다."
       );
 
     }
 
 
 
-    // 후면 카메라 우선 선택
+    /*
+      아이폰:
+      카메라 2개 이상이면 마지막 카메라 선택
+      → 후면 카메라 가능성이 높음
+
+      노트북:
+      1개면 그대로 사용
+    */
+
 
     let cameraId =
       cameras[0].id;
 
 
-    for(
-      const camera of cameras
-    ){
+    if(cameras.length > 1){
 
-      if(
-        camera.label
-        .toLowerCase()
-        .includes("back")
-      ){
-
-        cameraId =
-          camera.id;
-
-      }
+      cameraId =
+        cameras[cameras.length - 1].id;
 
     }
 
@@ -208,7 +191,6 @@ async function startCamera(){
 
       }
 
-
     );
 
 
@@ -222,7 +204,6 @@ async function startCamera(){
 
   }
 
-
 }
 
 
@@ -233,9 +214,7 @@ async function onScanSuccess(decodedText){
 
   try{
 
-
     await html5QrCode.stop();
-
 
   }catch(e){}
 
@@ -248,19 +227,10 @@ async function onScanSuccess(decodedText){
   `;
 
 
-
-  /*
-    여기서 이후에
-    Apps Script 기록 연결 예정
-  */
-
-
 }
 
 
-
 </script>
-
 
 </body>
 </html>
