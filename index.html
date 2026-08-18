@@ -9,14 +9,14 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
+body{
+  font-family:Arial,sans-serif;
   text-align:center;
   padding:20px;
   background:#f5f7fb;
 }
 
-.box {
+.box{
   max-width:420px;
   margin:auto;
   background:white;
@@ -25,16 +25,7 @@ body {
   box-shadow:0 4px 15px rgba(0,0,0,.1);
 }
 
-h1 {
-  font-size:24px;
-}
-
-.info {
-  margin:15px 0;
-  line-height:1.6;
-}
-
-button {
+button{
   width:100%;
   padding:16px;
   margin-top:15px;
@@ -46,22 +37,21 @@ button {
   font-weight:bold;
 }
 
-#reader {
+#reader{
   margin-top:20px;
 }
 
-#result {
+#result{
   margin-top:15px;
-  font-weight:bold;
   color:green;
+  font-weight:bold;
 }
 
-#error {
+#error{
   margin-top:15px;
   color:red;
   white-space:pre-line;
 }
-
 </style>
 
 </head>
@@ -73,11 +63,11 @@ button {
 
 <h1>📷 QR 인증</h1>
 
-<div class="info">
+<p>
 교실 QR을 촬영해주세요.<br>
 QR 촬영 시간이<br>
 실제 등교/복귀 시간으로 기록됩니다.
-</div>
+</p>
 
 
 <div id="studentInfo"></div>
@@ -117,124 +107,178 @@ const action =
 params.get("action") || "";
 
 
-
 document.getElementById("studentInfo").innerHTML =
 `
 <b>${studentNumber} ${studentName}</b><br>
-출결 : ${action}
+${action}
 `;
 
 
 
-let html5QrCode = null;
+const WEB_APP_URL =
+"https://script.google.com/macros/s/AKfycbwjXwujbqVUqpDpxdjlqdOTzPLu-6sLA0bMKnVKuc_cWpkC_R99fLfI49ZfvjHTUwxI/exec";
+
+
+
+let html5QrCode;
 
 
 
 async function startCamera(){
 
 
-  document.getElementById("error").innerText="";
+try{
 
 
-  try{
-
-
-    html5QrCode =
-      new Html5Qrcode("reader");
+html5QrCode =
+new Html5Qrcode("reader");
 
 
 
-    const cameras =
-      await Html5Qrcode.getCameras();
+const cameras =
+await Html5Qrcode.getCameras();
 
 
 
-    if(!cameras || cameras.length === 0){
+if(!cameras.length){
 
-      throw new Error(
-        "카메라를 찾을 수 없습니다."
-      );
+throw new Error(
+"카메라를 찾을 수 없습니다."
+);
 
-    }
-
-
-
-    let cameraId =
-      cameras[0].id;
+}
 
 
 
-    // 아이폰 후면 우선
-    if(cameras.length > 1){
-
-      cameraId =
-        cameras[cameras.length - 1].id;
-
-    }
+let cameraId =
+cameras[0].id;
 
 
 
-    await html5QrCode.start(
+// 아이폰 후면 우선
 
-      cameraId,
+if(cameras.length > 1){
 
+cameraId =
+cameras[cameras.length-1].id;
 
-      {
-        fps:20,
-
-        qrbox:{
-          width:280,
-          height:280
-        },
-
-        aspectRatio:1.0
-
-      },
+}
 
 
-      onScanSuccess,
+
+await html5QrCode.start(
+
+cameraId,
+
+{
+fps:20,
+
+qrbox:{
+width:280,
+height:280
+},
+
+aspectRatio:1.0
+
+},
 
 
-      function(errorMessage){
-
-        // 스캔 실패 메시지는 무시
-
-      }
+onScanSuccess,
 
 
-    );
+function(){
+
+}
+
+);
 
 
-  }catch(error){
+}catch(error){
 
+document.getElementById("error").innerText =
+"❌ 카메라 오류\n"+error;
 
-    document.getElementById("error").innerText =
-    "❌ 카메라 오류\n\n" + error;
-
-
-  }
+}
 
 
 }
 
 
 
+
 async function onScanSuccess(decodedText){
 
 
-  document.getElementById("result").innerHTML =
-  `
-  ✅ QR 인식 완료<br>
-  ${decodedText}
-  `;
+
+try{
+
+await html5QrCode.stop();
+
+}catch(e){}
 
 
 
-  try{
+const data = {
 
-    await html5QrCode.stop();
+studentNumber:studentNumber,
 
-  }catch(e){}
+studentName:studentName,
+
+action:action,
+
+qr:decodedText
+
+};
+
+
+
+fetch(
+
+WEB_APP_URL,
+
+{
+
+method:"POST",
+
+body:JSON.stringify(data)
+
+}
+
+)
+
+.then(
+response=>response.json()
+)
+
+.then(
+
+result=>{
+
+
+document.getElementById("result").innerHTML =
+`
+✅ QR 인증 완료<br>
+${result.message}
+`;
+
+
+}
+
+)
+
+
+.catch(
+
+error=>{
+
+
+document.getElementById("error").innerText =
+"❌ 저장 오류\n"+error;
+
+
+}
+
+);
 
 
 
@@ -243,7 +287,6 @@ async function onScanSuccess(decodedText){
 
 
 </script>
-
 
 </body>
 </html>
