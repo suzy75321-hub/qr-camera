@@ -2,7 +2,6 @@
 <html lang="ko">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
@@ -10,11 +9,9 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>QR 인증</title>
+  <title>QR 카메라 테스트</title>
 
-  <!-- QR 인식 라이브러리 -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
 
   <style>
 
@@ -26,29 +23,22 @@
       margin: 0;
       padding: 20px;
       background: #f5f7fb;
-      font-family: Arial, "Noto Sans KR", sans-serif;
+      font-family: Arial, sans-serif;
       text-align: center;
     }
 
     .box {
-      width: 100%;
       max-width: 440px;
       margin: 20px auto;
-      padding: 28px 20px 30px;
+      padding: 25px 20px 30px;
       background: white;
-      border-radius: 22px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
 
     h1 {
-      margin: 5px 0 12px;
-      font-size: 26px;
-    }
-
-    .subtitle {
-      color: #555;
-      line-height: 1.6;
-      margin-bottom: 20px;
+      font-size: 25px;
+      margin-bottom: 15px;
     }
 
     .notice {
@@ -57,7 +47,6 @@
       border-radius: 14px;
       margin: 15px 0;
       line-height: 1.6;
-      font-size: 14px;
     }
 
     #reader {
@@ -66,31 +55,27 @@
       margin: 20px auto;
     }
 
-    .button {
+    button {
       width: 100%;
-      border: 0;
+      border: none;
       border-radius: 14px;
-      padding: 17px;
+      padding: 18px;
       margin-top: 10px;
       font-size: 18px;
       font-weight: bold;
       cursor: pointer;
     }
 
-    .start {
+    #startButton {
       background: #dff5e5;
     }
 
-    .cancel {
+    #cancelButton {
       background: #eeeeee;
     }
 
-    .hidden {
-      display: none !important;
-    }
-
     #message {
-      margin-top: 18px;
+      margin-top: 20px;
       white-space: pre-line;
       line-height: 1.6;
       font-weight: bold;
@@ -104,6 +89,10 @@
       color: #16803c;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
   </style>
 
 </head>
@@ -113,45 +102,31 @@
 
 <div class="box">
 
-  <h1>📷 QR 인증</h1>
-
-  <div class="subtitle">
-    교실 QR을 촬영해주세요.<br>
-    QR을 촬영한 시간이 실제 등교/복귀 시간으로 기록됩니다.
-  </div>
-
+  <h1>📷 QR 카메라 테스트</h1>
 
   <div class="notice">
-
-    📷 아래 버튼을 누르면<br>
-    카메라 권한을 요청합니다.
-
+    아래 버튼을 누르면 카메라를 시작합니다.<br>
+    QR을 비추면 정상 작동 여부를 확인합니다.
   </div>
-
 
   <div
     id="reader"
     class="hidden"
   ></div>
 
-
   <button
     id="startButton"
-    class="button start"
     onclick="startCamera()"
   >
     📷 카메라 시작
   </button>
 
-
   <button
     id="cancelButton"
-    class="button cancel"
-    onclick="goBack()"
+    onclick="stopCamera()"
   >
-    취소하고 돌아가기
+    취소
   </button>
-
 
   <div id="message"></div>
 
@@ -160,139 +135,20 @@
 
 <script>
 
-
-// ========================================
-// 전역 변수
-// ========================================
-
 let scanner = null;
 
-let scanning = false;
 
-let lastQr = "";
+/* ========================================
+   카메라 시작
+======================================== */
 
+function startCamera() {
 
-// ========================================
-// 메시지
-// ========================================
+  document
+    .getElementById("message")
+    .innerText =
+      "카메라를 준비하고 있습니다...";
 
-function showMessage(
-  message,
-  type
-) {
-
-  const element =
-    document.getElementById("message");
-
-  element.innerText =
-    message;
-
-  element.className =
-    type || "";
-
-}
-
-
-// ========================================
-// 카메라 시작
-// ========================================
-
-async function startCamera() {
-
-  showMessage(
-    "카메라를 준비하고 있습니다..."
-  );
-
-
-  // ----------------------------------------
-  // 브라우저 카메라 권한 확인
-  // ----------------------------------------
-
-  if (
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ) {
-
-    showMessage(
-      "❌ 이 브라우저에서는 카메라 기능을 사용할 수 없습니다.\n\n" +
-      "HTTPS 페이지에서 다시 시도해주세요.",
-      "error"
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    /*
-     * 카메라 권한 요청
-     *
-     * facingMode는 반드시 문자열로 사용
-     */
-
-    const stream =
-      await navigator.mediaDevices.getUserMedia({
-
-        video: {
-          facingMode: "environment"
-        },
-
-        audio: false
-
-      });
-
-
-    /*
-     * 권한 확인 완료.
-     * 실제 QR 스캐너가 카메라를 다시 사용하므로
-     * 여기서 임시 스트림은 종료한다.
-     */
-
-    stream
-      .getTracks()
-      .forEach(
-        function(track) {
-
-          track.stop();
-
-        }
-      );
-
-
-  } catch (error) {
-
-    console.error(
-      "카메라 권한 오류:",
-      error
-    );
-
-
-    showMessage(
-
-      "❌ 카메라 접근에 실패했습니다.\n\n" +
-
-      "브라우저의 카메라 권한을 확인해주세요.\n\n" +
-
-      "오류: " +
-      error.name +
-      "\n" +
-      error.message,
-
-      "error"
-
-    );
-
-
-    return;
-
-  }
-
-
-  // ----------------------------------------
-  // 화면 변경
-  // ----------------------------------------
 
   document
     .getElementById("startButton")
@@ -306,55 +162,17 @@ async function startCamera() {
     .remove("hidden");
 
 
-  showMessage(
-    "📷 교실 QR을 화면 안에 맞춰주세요."
-  );
-
-
-  // ----------------------------------------
-  // QR 스캐너 시작
-  // ----------------------------------------
-
-  startQrScanner();
-
-}
-
-
-// ========================================
-// QR 스캐너 시작
-// ========================================
-
-function startQrScanner() {
-
-  if (
-    typeof Html5Qrcode ===
-    "undefined"
-  ) {
-
-    showMessage(
-      "❌ QR 스캐너 라이브러리를 불러오지 못했습니다.",
-      "error"
-    );
-
-    return;
-
-  }
-
-
-  if (scanning) {
-
-    return;
-
-  }
-
-
   scanner =
-    new Html5Qrcode(
-      "reader"
-    );
+    new Html5Qrcode("reader");
 
 
-  const scannerConfig = {
+  /*
+   * 중요
+   *
+   * 여기서는 facingMode를 사용하지 않는다.
+   */
+
+  const cameraConfig = {
 
     fps: 10,
 
@@ -363,18 +181,11 @@ function startQrScanner() {
       height: 250
     },
 
-    aspectRatio: 1.0,
-
     formatsToSupport: [
-
       Html5QrcodeSupportedFormats.QR_CODE
-
     ]
 
   };
-
-
-  scanning = true;
 
 
   scanner
@@ -384,62 +195,28 @@ function startQrScanner() {
         facingMode: "environment"
       },
 
-      scannerConfig,
-
+      cameraConfig,
 
       function(decodedText) {
 
-        if (
-          lastQr === decodedText
-        ) {
-
-          return;
-
-        }
-
-
-        lastQr =
-          decodedText;
-
-
-        handleQrSuccess(
+        showSuccess(
           decodedText
         );
 
       },
 
+      function(errorMessage) {
 
-      function() {
-
-        // QR을 찾는 동안에는
-        // 별도 메시지를 표시하지 않는다.
+        // QR을 찾는 중에는 아무것도 표시하지 않음
 
       }
 
     )
 
-
     .catch(
       function(error) {
 
-        console.error(
-          "QR 스캐너 오류:",
-          error
-        );
-
-
-        scanning = false;
-
-
-        showMessage(
-
-          "❌ QR 카메라를 시작하지 못했습니다.\n\n" +
-
-          String(error),
-
-          "error"
-
-        );
+        console.error(error);
 
 
         document
@@ -453,149 +230,115 @@ function startQrScanner() {
           .classList
           .remove("hidden");
 
+
+        showError(
+          "❌ 카메라를 시작하지 못했습니다.\n\n" +
+          String(error)
+        );
+
       }
     );
 
 }
 
 
-// ========================================
-// QR 인식 성공
-// ========================================
+/* ========================================
+   QR 성공
+======================================== */
 
-async function handleQrSuccess(
-  decodedText
+function showSuccess(
+  text
 ) {
 
-  showMessage(
-    "✅ QR을 읽었습니다."
-  );
+  stopCamera();
 
 
-  await stopScanner();
+  document
+    .getElementById("message")
+    .innerText =
 
+      "🎉 카메라 테스트 성공!\n\n" +
 
-  showMessage(
+      "읽은 QR 값:\n" +
 
-    "✅ 카메라와 QR 촬영이 정상 작동합니다.\n\n" +
+      text;
 
-    "QR 인증값:\n" +
-
-    decodedText +
-
-    "\n\n" +
-
-    "🎉 카메라 테스트 성공!"
-
-    ,
-
-    "success"
-
-  );
+  document
+    .getElementById("message")
+    .className =
+      "success";
 
 }
 
 
-// ========================================
-// QR 스캐너 종료
-// ========================================
+/* ========================================
+   오류
+======================================== */
 
-async function stopScanner() {
+function showError(
+  text
+) {
+
+  document
+    .getElementById("message")
+    .innerText =
+      text;
+
+  document
+    .getElementById("message")
+    .className =
+      "error";
+
+}
+
+
+/* ========================================
+   카메라 종료
+======================================== */
+
+function stopCamera() {
 
   if (!scanner) {
-
-    scanning = false;
 
     return;
 
   }
 
 
-  try {
-
-    await scanner.stop();
-
-  } catch (error) {
-
-    console.log(
-      "scanner stop:",
-      error
-    );
-
-  }
-
-
-  try {
-
-    scanner.clear();
-
-  } catch (error) {
-
-    console.log(
-      "scanner clear:",
-      error
-    );
-
-  }
-
-
-  scanner = null;
-
-  scanning = false;
-
-}
-
-
-// ========================================
-// 뒤로가기
-// ========================================
-
-function goBack() {
-
-  stopScanner()
-    .finally(
+  scanner
+    .stop()
+    .then(
       function() {
 
-        if (
-          window.history.length > 1
-        ) {
+        scanner.clear();
 
-          history.back();
+        scanner = null;
 
-        } else {
+      }
+    )
+    .catch(
+      function(error) {
 
-          window.location.href =
-            "about:blank";
+        console.log(error);
 
-        }
+        scanner = null;
 
       }
     );
 
+
+  document
+    .getElementById("reader")
+    .classList
+    .add("hidden");
+
+
+  document
+    .getElementById("startButton")
+    .classList
+    .remove("hidden");
+
 }
-
-
-// ========================================
-// 페이지 종료
-// ========================================
-
-window.addEventListener(
-  "beforeunload",
-  function() {
-
-    if (scanner) {
-
-      scanner
-        .stop()
-        .catch(
-          function() {}
-        );
-
-    }
-
-  }
-);
-
 
 </script>
 
