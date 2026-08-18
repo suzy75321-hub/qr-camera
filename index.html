@@ -11,8 +11,8 @@
 <style>
 body {
   font-family: Arial, sans-serif;
-  text-align: center;
-  padding: 20px;
+  text-align:center;
+  padding:20px;
   background:#f5f7fb;
 }
 
@@ -38,16 +38,22 @@ button {
   width:100%;
   padding:16px;
   margin-top:15px;
-  border:none;
+  border:0;
   border-radius:12px;
-  font-size:18px;
-  font-weight:bold;
   background:#333;
   color:white;
+  font-size:18px;
+  font-weight:bold;
 }
 
 #reader {
   margin-top:20px;
+}
+
+#result {
+  margin-top:15px;
+  font-weight:bold;
+  color:green;
 }
 
 #error {
@@ -56,13 +62,10 @@ button {
   white-space:pre-line;
 }
 
-#result {
-  margin-top:15px;
-  font-weight:bold;
-}
 </style>
 
 </head>
+
 
 <body>
 
@@ -76,22 +79,29 @@ QR 촬영 시간이<br>
 실제 등교/복귀 시간으로 기록됩니다.
 </div>
 
+
 <div id="studentInfo"></div>
+
 
 <button onclick="startCamera()">
 📷 카메라 시작
 </button>
 
+
 <div id="reader"></div>
+
 
 <div id="result"></div>
 
 <div id="error"></div>
 
+
 </div>
 
 
+
 <script>
+
 
 const params =
 new URLSearchParams(location.search);
@@ -107,6 +117,7 @@ const action =
 params.get("action") || "";
 
 
+
 document.getElementById("studentInfo").innerHTML =
 `
 <b>${studentNumber} ${studentName}</b><br>
@@ -114,11 +125,13 @@ document.getElementById("studentInfo").innerHTML =
 `;
 
 
+
 let html5QrCode = null;
 
 
 
 async function startCamera(){
+
 
   document.getElementById("error").innerText="";
 
@@ -146,20 +159,12 @@ async function startCamera(){
 
 
 
-    /*
-      아이폰:
-      카메라 2개 이상이면 마지막 카메라 선택
-      → 후면 카메라 가능성이 높음
-
-      노트북:
-      1개면 그대로 사용
-    */
-
-
     let cameraId =
       cameras[0].id;
 
 
+
+    // 아이폰 후면 우선
     if(cameras.length > 1){
 
       cameraId =
@@ -173,12 +178,17 @@ async function startCamera(){
 
       cameraId,
 
+
       {
-        fps:10,
+        fps:20,
+
         qrbox:{
-          width:250,
-          height:250
-        }
+          width:280,
+          height:280
+        },
+
+        aspectRatio:1.0
+
       },
 
 
@@ -187,29 +197,37 @@ async function startCamera(){
 
       function(errorMessage){
 
-        console.log(errorMessage);
+        // 스캔 실패 메시지는 무시
 
       }
+
 
     );
 
 
-  } catch(error){
+  }catch(error){
 
 
     document.getElementById("error").innerText =
-    "❌ 카메라를 시작하지 못했습니다.\n\n"
-    + error;
+    "❌ 카메라 오류\n\n" + error;
 
 
   }
+
 
 }
 
 
 
-
 async function onScanSuccess(decodedText){
+
+
+  document.getElementById("result").innerHTML =
+  `
+  ✅ QR 인식 완료<br>
+  ${decodedText}
+  `;
+
 
 
   try{
@@ -220,17 +238,12 @@ async function onScanSuccess(decodedText){
 
 
 
-  document.getElementById("result").innerHTML =
-  `
-  ✅ QR 인증 완료<br>
-  ${decodedText}
-  `;
-
-
 }
 
 
+
 </script>
+
 
 </body>
 </html>
