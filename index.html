@@ -2,38 +2,32 @@
 <html lang="ko">
 
 <head>
-
   <meta charset="UTF-8">
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
+    content="width=device-width, initial-scale=1.0"
   >
 
-  <title>QR 카메라</title>
+  <title>QR 인증</title>
 
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
 
-    * {
-      box-sizing: border-box;
-    }
-
     body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
       margin: 0;
       padding: 20px;
-      background: #f5f7fb;
-      font-family: Arial, sans-serif;
       text-align: center;
     }
 
     .box {
-      width: 100%;
       max-width: 440px;
-      margin: 0 auto;
-      padding: 25px 20px 30px;
+      margin: auto;
       background: white;
+      padding: 28px 20px 30px;
       border-radius: 20px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     }
@@ -45,8 +39,8 @@
 
     .subtitle {
       color: #666;
+      line-height: 1.6;
       margin-bottom: 20px;
-      line-height: 1.5;
     }
 
     #reader {
@@ -55,26 +49,29 @@
       margin: 20px auto;
     }
 
-    .status {
-      margin: 15px 0;
-      padding: 14px;
-      border-radius: 12px;
-      background: #eef5ff;
+    .message {
+      margin-top: 15px;
       font-weight: bold;
-      line-height: 1.5;
+      line-height: 1.6;
       white-space: pre-line;
     }
 
     .button {
       width: 100%;
       padding: 17px;
-      margin-top: 10px;
+      margin-top: 12px;
       border: none;
       border-radius: 14px;
-      background: #eeeeee;
       font-size: 17px;
       font-weight: bold;
-      cursor: pointer;
+      background: #eeeeee;
+    }
+
+    .error {
+      color: #d33;
+      margin-top: 20px;
+      font-weight: bold;
+      line-height: 1.6;
     }
 
     .hidden {
@@ -88,414 +85,240 @@
 
 <body>
 
-
 <div class="box">
 
+  <h1>📷 QR 인증</h1>
 
-  <h1>
-    📷 QR 인증
-  </h1>
-
-
-  <div
-    id="actionText"
-    class="subtitle"
-  >
+  <div class="subtitle">
     교실 QR을 촬영해주세요.
+    <br>
+    QR을 촬영한 시간이 실제 등교/복귀 시간으로 기록됩니다.
   </div>
-
 
   <div id="reader"></div>
 
-
   <div
-    id="status"
-    class="status"
+    id="message"
+    class="message"
   >
     카메라를 준비하고 있습니다...
   </div>
 
-
   <button
-    id="cancelButton"
     class="button"
     onclick="goBack()"
   >
     취소하고 돌아가기
   </button>
 
-
 </div>
 
 
 <script>
 
+  // ========================================
+  // 우리반 앱 정보
+  // ========================================
 
-// ========================================
-// URL에서 전달받은 정보
-// ========================================
-
-const params =
-  new URLSearchParams(
-    window.location.search
-  );
-
-
-const appUrl =
-  params.get("app");
-
-
-const studentNumber =
-  params.get("number");
-
-
-const studentName =
-  params.get("name");
-
-
-const action =
-  params.get("action");
-
-
-// ========================================
-// 스캐너
-// ========================================
-
-let scanner = null;
-
-let scanFinished = false;
-
-
-// ========================================
-// 상태 표시
-// ========================================
-
-function setStatus(
-  message
-) {
-
-  document
-    .getElementById("status")
-    .innerText =
-      message;
-
-}
-
-
-// ========================================
-// 전달받은 정보 확인
-// ========================================
-
-function checkParameters() {
-
-  if (
-    !appUrl ||
-    !studentNumber ||
-    !studentName ||
-    !action
-  ) {
-
-    setStatus(
-      "❌ 잘못된 접근입니다.\n" +
-      "우리반 앱에서 다시 시작해주세요."
+  const params =
+    new URLSearchParams(
+      window.location.search
     );
 
-    return false;
 
-  }
-
-
-  document
-    .getElementById("actionText")
-    .innerText =
-      studentName +
-      " 학생\n" +
-      action +
-      "\n\n교실 QR을 촬영해주세요.";
+  const studentNumber =
+    params.get("studentNumber");
 
 
-  return true;
-
-}
-
-
-// ========================================
-// QR 촬영 성공
-// ========================================
-
-function onScanSuccess(
-  decodedText
-) {
-
-  if (scanFinished) {
-    return;
-  }
+  const studentName =
+    params.get("studentName");
 
 
-  scanFinished = true;
-
-
-  setStatus(
-    "✅ QR을 확인했습니다.\n" +
-    "기록을 처리하고 있습니다..."
-  );
-
-
-  stopScanner()
-    .then(function() {
-
-      return goToApp(
-        decodedText
-      );
-
-    });
-
-}
-
-
-// ========================================
-// Apps Script로 돌아가기
-// ========================================
-
-function goToApp(
-  qrToken
-) {
-
-  const returnParams =
-    new URLSearchParams();
-
-
-  returnParams.set(
-    "qr",
-    qrToken
-  );
-
-
-  returnParams.set(
-    "number",
-    studentNumber
-  );
-
-
-  returnParams.set(
-    "name",
-    studentName
-  );
-
-
-  returnParams.set(
-    "action",
-    action
-  );
+  const action =
+    params.get("action");
 
 
   const returnUrl =
-    appUrl +
-    "?" +
-    returnParams.toString();
+    params.get("returnUrl");
 
 
-  window.location.href =
-    returnUrl;
-
-}
-
-
-// ========================================
-// QR 읽기 실패
-// ========================================
-
-function onScanFailure() {
-
-  // QR을 찾지 못하는 동안에는
-  // 아무 메시지도 변경하지 않음
-
-}
-
-
-// ========================================
-// 카메라 시작
-// ========================================
-
-function startScanner() {
+  // ========================================
+  // 잘못된 접근 확인
+  // ========================================
 
   if (
-    typeof Html5Qrcode ===
-    "undefined"
+    !studentNumber ||
+    !studentName ||
+    !action ||
+    !returnUrl
   ) {
 
-    setStatus(
-      "❌ QR 스캐너를 불러오지 못했습니다."
-    );
-
-    return;
-
-  }
-
-
-  scanner =
-    new Html5Qrcode(
-      "reader"
-    );
-
-
-  const scannerConfig = {
-
-    fps: 10,
-
-    qrbox: {
-      width: 250,
-      height: 250
-    },
-
-    aspectRatio: 1.0,
-
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.QR_CODE
-    ]
-
-  };
-
-
-  scanner
-    .start(
-
-      {
-        facingMode: "environment"
-      },
-
-      scannerConfig,
-
-      onScanSuccess,
-
-      onScanFailure
-
-    )
-
-    .then(function() {
-
-      setStatus(
-        "📷 QR코드를 카메라 안에 맞춰주세요."
-      );
-
-    })
-
-    .catch(function(error) {
-
-      console.error(error);
-
-
-      setStatus(
-        "❌ 카메라를 사용할 수 없습니다.\n\n" +
-        "브라우저의 카메라 권한을 허용해주세요."
-      );
-
-    });
-
-}
-
-
-// ========================================
-// 스캐너 종료
-// ========================================
-
-function stopScanner() {
-
-  if (!scanner) {
-
-    return Promise.resolve();
-
-  }
-
-
-  return scanner
-    .stop()
-
-    .then(function() {
-
-      scanner.clear();
-
-      scanner = null;
-
-    })
-
-    .catch(function() {
-
-      scanner = null;
-
-    });
-
-}
-
-
-// ========================================
-// 취소
-// ========================================
-
-function goBack() {
-
-  stopScanner()
-    .then(function() {
-
-      if (appUrl) {
-
-        const returnParams =
-          new URLSearchParams();
-
-
-        returnParams.set(
-          "number",
-          studentNumber || ""
-        );
-
-
-        returnParams.set(
-          "name",
-          studentName || ""
-        );
-
-
-        window.location.href =
-          appUrl +
-          "?" +
-          returnParams.toString();
-
-      } else {
-
-        history.back();
-
-      }
-
-    });
-
-}
-
-
-// ========================================
-// 페이지 시작
-// ========================================
-
-window.addEventListener(
-  "load",
-  function() {
-
-    if (
-      !checkParameters()
-    ) {
-
-      return;
-
-    }
-
+    document
+      .getElementById("reader")
+      .innerHTML = "";
+
+    document
+      .getElementById("message")
+      .innerHTML =
+        '<div class="error">' +
+        '❌ 잘못된 접근입니다.<br>' +
+        '우리반 앱에서 다시 시작해주세요.' +
+        '</div>';
+
+  } else {
 
     startScanner();
 
   }
-);
 
+
+  // ========================================
+  // 메시지
+  // ========================================
+
+  function setMessage(text) {
+
+    document
+      .getElementById("message")
+      .innerText = text;
+
+  }
+
+
+  // ========================================
+  // QR 스캐너 시작
+  // ========================================
+
+  function startScanner() {
+
+    const scanner =
+      new Html5Qrcode("reader");
+
+
+    const scannerConfig = {
+
+      fps: 10,
+
+      qrbox: {
+        width: 250,
+        height: 250
+      },
+
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE
+      ]
+
+    };
+
+
+    scanner
+      .start(
+
+        {
+          facingMode: "environment"
+        },
+
+        scannerConfig,
+
+        function(decodedText) {
+
+          scanner
+            .stop()
+            .then(function() {
+
+              scanner.clear();
+
+              processQr(decodedText);
+
+            })
+            .catch(function() {
+
+              processQr(decodedText);
+
+            });
+
+        },
+
+        function() {
+
+          // QR 탐색 중에는 아무 메시지도 표시하지 않음
+
+        }
+
+      )
+
+      .then(function() {
+
+        setMessage(
+          "📷 교실 QR을 촬영해주세요."
+        );
+
+      })
+
+      .catch(function(error) {
+
+        console.error(error);
+
+        setMessage(
+          "❌ 카메라를 사용할 수 없습니다.\n\n" +
+          "브라우저의 카메라 권한을 허용해주세요."
+        );
+
+      });
+
+  }
+
+
+  // ========================================
+  // QR 촬영 성공
+  // ========================================
+
+  function processQr(scannedToken) {
+
+    setMessage(
+      "🔐 QR 인증 중입니다..."
+    );
+
+
+    // Apps Script로 전달
+    const url =
+      returnUrl +
+      "?mode=qr" +
+      "&studentNumber=" +
+      encodeURIComponent(studentNumber) +
+      "&studentName=" +
+      encodeURIComponent(studentName) +
+      "&action=" +
+      encodeURIComponent(action) +
+      "&token=" +
+      encodeURIComponent(scannedToken);
+
+
+    window.location.href = url;
+
+  }
+
+
+  // ========================================
+  // 취소
+  // ========================================
+
+  function goBack() {
+
+    if (returnUrl) {
+
+      window.location.href =
+        returnUrl;
+
+    } else {
+
+      history.back();
+
+    }
+
+  }
 
 </script>
-
 
 </body>
 
