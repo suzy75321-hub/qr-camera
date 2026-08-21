@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>카메라 진단</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f5f7fb;
+}
+
+.box {
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 18px;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+button {
+  width: 100%;
+  padding: 15px;
+  margin: 10px 0;
+  font-size: 17px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<h2>📷 카메라 진단</h2>
+
+<button onclick="runTest()">
+카메라 진단 시작
+</button>
+
+<pre id="result">
+대기 중...
+</pre>
+
+<video
+  id="video"
+  autoplay
+  playsinline
+  muted
+  style="width:100%;background:#000;"
+></video>
+
+</div>
+
+<script>
+
+async function runTest() {
+
+  const result =
+    document.getElementById("result");
+
+  result.textContent =
+    "진단 중...\n\n";
+
+  try {
+
+    const lines = [];
+
+    lines.push(
+      "주소: " +
+      location.href
+    );
+
+    lines.push(
+      "origin: " +
+      location.origin
+    );
+
+    lines.push(
+      "HTTPS: " +
+      window.isSecureContext
+    );
+
+    lines.push(
+      "mediaDevices: " +
+      !!navigator.mediaDevices
+    );
+
+    lines.push(
+      "getUserMedia: " +
+      !!(
+        navigator.mediaDevices &&
+        navigator.mediaDevices.getUserMedia
+      )
+    );
+
+    lines.push(
+      "visibilityState: " +
+      document.visibilityState
+    );
+
+    lines.push(
+      "userAgent: " +
+      navigator.userAgent
+    );
+
+
+    if (
+      navigator.permissions &&
+      navigator.permissions.query
+    ) {
+
+      try {
+
+        const permission =
+          await navigator.permissions.query({
+            name: "camera"
+          });
+
+        lines.push(
+          "camera permission: " +
+          permission.state
+        );
+
+      } catch(error) {
+
+        lines.push(
+          "camera permission 조회 실패: " +
+          error.name +
+          " / " +
+          error.message
+        );
+
+      }
+
+    } else {
+
+      lines.push(
+        "camera permission API: 없음"
+      );
+
+    }
+
+
+    result.textContent =
+      lines.join("\n") +
+      "\n\n카메라 요청 중...";
+
+
+    const stream =
+      await navigator.mediaDevices
+        .getUserMedia({
+          video: true,
+          audio: false
+        });
+
+
+    const video =
+      document.getElementById(
+        "video"
+      );
+
+    video.srcObject =
+      stream;
+
+
+    result.textContent +=
+      "\n\n✅ 카메라 요청 성공";
+
+  } catch(error) {
+
+    result.textContent +=
+      "\n\n❌ 카메라 요청 실패\n\n" +
+      "name: " +
+      error.name +
+      "\n" +
+      "message: " +
+      error.message;
+
+  }
+
+}
+
+</script>
+
+</body>
+
+</html>
