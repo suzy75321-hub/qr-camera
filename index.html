@@ -4,21 +4,13 @@
 <head>
 
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>교실 QR 인증</title>
 
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <style>
-
-* {
-  box-sizing: border-box;
-}
 
 body {
   font-family: Arial, sans-serif;
@@ -38,8 +30,8 @@ body {
 }
 
 h1 {
-  margin: 5px 0 10px;
-  font-size: 25px;
+  font-size: 24px;
+  margin: 5px 0 15px;
 }
 
 .info {
@@ -50,84 +42,42 @@ h1 {
   margin-bottom: 18px;
 }
 
-.camera-wrap {
-  position: relative;
+video {
   width: 100%;
   max-width: 380px;
-  margin: 0 auto;
-  overflow: hidden;
-  border-radius: 15px;
-  background: #000;
-}
-
-#video {
-  width: 100%;
-  display: block;
   min-height: 220px;
+  background: #000;
+  border-radius: 15px;
+  display: block;
+  margin: 15px auto;
   object-fit: cover;
 }
 
-#canvas {
-  display: none;
-}
-
-.scan-frame {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 260px;
-  height: 260px;
-  transform: translate(-50%, -50%);
-  border: 3px solid white;
-  border-radius: 18px;
-  pointer-events: none;
-}
-
-.button {
+button {
   width: 100%;
   padding: 16px;
-  margin: 8px 0;
-  border: none;
-  border-radius: 13px;
-  font-size: 17px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.dark {
+  margin-top: 10px;
+  border: 0;
+  border-radius: 12px;
   background: #333;
   color: white;
-}
-
-.gray {
-  background: #eeeeee;
-}
-
-#result {
-  margin-top: 18px;
+  font-size: 17px;
   font-weight: bold;
+}
+
+#message {
+  margin-top: 18px;
   line-height: 1.5;
+  font-weight: bold;
   white-space: pre-line;
 }
 
 #error {
-  margin-top: 18px;
+  margin-top: 15px;
   color: #c62828;
-  font-weight: bold;
   line-height: 1.5;
   white-space: pre-line;
   word-break: break-word;
-}
-
-.small {
-  color: #777;
-  font-size: 13px;
-  line-height: 1.5;
-  margin-top: 12px;
-}
-
-.hidden {
-  display: none !important;
 }
 
 </style>
@@ -137,7 +87,9 @@ h1 {
 
 <body>
 
+
 <div class="box">
+
 
 <h1>
 📷 교실 QR 인증
@@ -154,25 +106,11 @@ h1 {
 
 <button
   id="startButton"
-  class="button dark"
-  type="button"
   onclick="startCamera()"
 >
-📷 카메라 시작
+카메라 시작
 </button>
 
-
-<button
-  id="stopButton"
-  class="button gray hidden"
-  type="button"
-  onclick="stopCamera()"
->
-카메라 끄기
-</button>
-
-
-<div class="camera-wrap">
 
 <video
   id="video"
@@ -181,28 +119,19 @@ h1 {
   muted
 ></video>
 
-<div class="scan-frame"></div>
 
+<canvas
+  id="canvas"
+  style="display:none;"
+></canvas>
+
+
+<div id="message">
+카메라 시작을 눌러주세요.
 </div>
 
-
-<canvas id="canvas"></canvas>
-
-
-<div id="result"></div>
 
 <div id="error"></div>
-
-
-<div class="small">
-
-교실에 있는 QR을 한 번만 찍어주세요.<br>
-
-<b>
-QR을 인증한 시간이 실제 등교/복귀 시간으로 기록됩니다.
-</b>
-
-</div>
 
 
 </div>
@@ -212,7 +141,7 @@ QR을 인증한 시간이 실제 등교/복귀 시간으로 기록됩니다.
 
 
 // ============================================================
-// URL 정보
+// 학생 정보
 // ============================================================
 
 const params =
@@ -246,7 +175,7 @@ const returnUrl =
 
 
 // ============================================================
-// Apps Script 주소
+// Apps Script
 // ============================================================
 
 const WEB_APP_URL =
@@ -254,12 +183,15 @@ const WEB_APP_URL =
 
 
 // ============================================================
-// 상태
+// 카메라 상태
 // ============================================================
 
 let stream = null;
+
 let scanning = false;
+
 let completed = false;
+
 let animationFrame = null;
 
 
@@ -268,15 +200,24 @@ let animationFrame = null;
 // ============================================================
 
 const video =
-  document.getElementById("video");
+  document.getElementById(
+    "video"
+  );
+
 
 const canvas =
-  document.getElementById("canvas");
+  document.getElementById(
+    "canvas"
+  );
+
 
 const context =
-  canvas.getContext("2d", {
-    willReadFrequently: true
-  });
+  canvas.getContext(
+    "2d",
+    {
+      willReadFrequently: true
+    }
+  );
 
 
 // ============================================================
@@ -284,44 +225,25 @@ const context =
 // ============================================================
 
 document
-  .getElementById("studentInfo")
+  .getElementById(
+    "studentInfo"
+  )
   .innerHTML =
 
     "<b>" +
-    escapeHtml(studentNumber) +
+    escapeHtml(
+      studentNumber
+    ) +
     " " +
-    escapeHtml(studentName) +
+    escapeHtml(
+      studentName
+    ) +
     "</b><br><br>" +
 
     "출결 : " +
-    escapeHtml(action) +
-
-    "<br><br>" +
-
-    "교실 QR을 찍어주세요.";
-
-
-// ============================================================
-// 필수 정보 확인
-// ============================================================
-
-if (
-  !studentNumber ||
-  !studentName ||
-  !action ||
-  !returnUrl
-) {
-
-  showError(
-    "인증 정보가 없습니다.\n" +
-    "조종례 앱에서 다시 시도해주세요."
-  );
-
-  document
-    .getElementById("startButton")
-    .disabled = true;
-
-}
+    escapeHtml(
+      action
+    );
 
 
 // ============================================================
@@ -330,14 +252,20 @@ if (
 
 async function startCamera() {
 
-  if (
-    scanning ||
-    completed
-  ) {
-    return;
-  }
+  document
+    .getElementById(
+      "message"
+    )
+    .innerText =
+      "카메라를 준비하는 중입니다...";
 
-  clearMessages();
+
+  document
+    .getElementById(
+      "error"
+    )
+    .innerText = "";
+
 
   try {
 
@@ -352,14 +280,19 @@ async function startCamera() {
 
     }
 
-    // --------------------------------------------------------
-    // test.html에서 성공했던 코드와 동일
-    // --------------------------------------------------------
+
+    // ========================================================
+    // 중요
+    // test.html에서 성공했던 코드 그대로
+    // ========================================================
 
     stream =
       await navigator.mediaDevices.getUserMedia({
+
         video: true,
+
         audio: false
+
       });
 
 
@@ -375,38 +308,50 @@ async function startCamera() {
 
 
     document
-      .getElementById("startButton")
-      .classList
-      .add("hidden");
+      .getElementById(
+        "startButton"
+      )
+      .disabled =
+        true;
 
 
     document
-      .getElementById("stopButton")
-      .classList
-      .remove("hidden");
+      .getElementById(
+        "message"
+      )
+      .innerText =
+        "✅ 카메라가 켜졌습니다.\n" +
+        "교실 QR을 화면에 맞춰주세요.";
 
 
-    showResult(
-      "📷 카메라가 켜졌습니다.\n" +
-      "교실 QR을 화면 안에 맞춰주세요."
-    );
-
-
-    waitForVideoAndScan();
+    scanLoop();
 
 
   } catch (error) {
 
-    console.error(error);
-
-    showError(
-      "❌ 카메라를 열 수 없습니다.\n\n" +
-      "오류 종류: " +
-      error.name +
-      "\n" +
-      "오류 내용: " +
-      error.message
+    console.error(
+      error
     );
+
+
+    document
+      .getElementById(
+        "message"
+      )
+      .innerText =
+        "❌ 카메라를 열지 못했습니다.";
+
+
+    document
+      .getElementById(
+        "error"
+      )
+      .innerText =
+        "오류 종류: " +
+        error.name +
+        "\n\n" +
+        "오류 내용: " +
+        error.message;
 
   }
 
@@ -414,42 +359,7 @@ async function startCamera() {
 
 
 // ============================================================
-// 영상 준비 확인 후 스캔
-// ============================================================
-
-function waitForVideoAndScan() {
-
-  if (
-    !scanning ||
-    completed
-  ) {
-    return;
-  }
-
-
-  if (
-    video.readyState >=
-    HTMLMediaElement.HAVE_CURRENT_DATA &&
-    video.videoWidth > 0 &&
-    video.videoHeight > 0
-  ) {
-
-    scanLoop();
-    return;
-
-  }
-
-
-  animationFrame =
-    requestAnimationFrame(
-      waitForVideoAndScan
-    );
-
-}
-
-
-// ============================================================
-// QR 스캔
+// QR 스캔 반복
 // ============================================================
 
 function scanLoop() {
@@ -458,7 +368,24 @@ function scanLoop() {
     !scanning ||
     completed
   ) {
+
     return;
+
+  }
+
+
+  if (
+    video.readyState <
+    HTMLMediaElement.HAVE_CURRENT_DATA
+  ) {
+
+    animationFrame =
+      requestAnimationFrame(
+        scanLoop
+      );
+
+    return;
+
   }
 
 
@@ -481,11 +408,13 @@ function scanLoop() {
       );
 
     return;
+
   }
 
 
   canvas.width =
     width;
+
 
   canvas.height =
     height;
@@ -509,7 +438,7 @@ function scanLoop() {
     );
 
 
-  const qrCode =
+  const qr =
     jsQR(
       imageData.data,
       imageData.width,
@@ -522,15 +451,16 @@ function scanLoop() {
 
 
   if (
-    qrCode &&
-    qrCode.data
+    qr &&
+    qr.data
   ) {
 
-    handleQrScan(
-      qrCode.data
+    handleQrSuccess(
+      qr.data
     );
 
     return;
+
   }
 
 
@@ -543,24 +473,24 @@ function scanLoop() {
 
 
 // ============================================================
-// QR 스캔 성공
+// QR 성공
 // ============================================================
 
-function handleQrScan(
+function handleQrSuccess(
   decodedText
 ) {
 
   if (
-    completed ||
-    !scanning
+    completed
   ) {
+
     return;
+
   }
 
 
   completed =
     true;
-
 
   scanning =
     false;
@@ -576,21 +506,25 @@ function handleQrScan(
 
     animationFrame =
       null;
+
   }
-
-
-  showResult(
-    "✅ QR을 읽었습니다.\n" +
-    "출결을 처리하고 있습니다..."
-  );
 
 
   stopCamera();
 
 
-  // ----------------------------------------------------------
-  // Apps Script QR 인증
-  // ----------------------------------------------------------
+  document
+    .getElementById(
+      "message"
+    )
+    .innerText =
+      "✅ QR을 읽었습니다.\n" +
+      "출결을 확인하는 중입니다...";
+
+
+  // ==========================================================
+  // Apps Script 인증 요청
+  // ==========================================================
 
   const verifyUrl =
     WEB_APP_URL +
@@ -649,43 +583,33 @@ function stopCamera() {
 
     animationFrame =
       null;
+
   }
 
 
-  if (stream) {
+  if (
+    stream
+  ) {
 
     stream
       .getTracks()
       .forEach(
         function(track) {
+
           track.stop();
+
         }
       );
 
 
     stream =
       null;
+
   }
 
 
   video.srcObject =
     null;
-
-
-  document
-    .getElementById("stopButton")
-    .classList
-    .add("hidden");
-
-
-  if (!completed) {
-
-    document
-      .getElementById("startButton")
-      .classList
-      .remove("hidden");
-
-  }
 
 }
 
@@ -705,72 +629,41 @@ window.addEventListener(
 
 
 // ============================================================
-// 메시지
-// ============================================================
-
-function showResult(text) {
-
-  document
-    .getElementById("result")
-    .innerText =
-      text;
-
-
-  document
-    .getElementById("error")
-    .innerText =
-      "";
-
-}
-
-
-function showError(text) {
-
-  document
-    .getElementById("error")
-    .innerText =
-      "❌ " + text;
-
-
-  document
-    .getElementById("result")
-    .innerText =
-      "";
-
-}
-
-
-function clearMessages() {
-
-  document
-    .getElementById("result")
-    .innerText =
-      "";
-
-  document
-    .getElementById("error")
-    .innerText =
-      "";
-
-}
-
-
-// ============================================================
 // HTML 안전처리
 // ============================================================
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return String(
+    value || ""
+  )
+  .replace(
+    /&/g,
+    "&amp;"
+  )
+  .replace(
+    /</g,
+    "&lt;"
+  )
+  .replace(
+    />/g,
+    "&gt;"
+  )
+  .replace(
+    /"/g,
+    "&quot;"
+  )
+  .replace(
+    /'/g,
+    "&#039;"
+  );
 
 }
 
 </script>
+
 
 </body>
 
