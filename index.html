@@ -89,6 +89,7 @@ h1 {
   font-weight: bold;
   line-height: 1.5;
   white-space: pre-line;
+  word-break: break-word;
 }
 
 .small {
@@ -100,6 +101,19 @@ h1 {
 
 .hidden {
   display: none !important;
+}
+
+.camera-list {
+  margin-top: 15px;
+  text-align: left;
+}
+
+.camera-list select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-size: 15px;
 }
 
 </style>
@@ -120,7 +134,7 @@ h1 {
   id="studentInfo"
   class="info"
 >
-  확인 중...
+확인 중...
 </div>
 
 
@@ -144,12 +158,32 @@ h1 {
 </button>
 
 
-<div id="reader"></div>
+<div
+  id="reader"
+></div>
 
 
-<div id="result"></div>
+<div
+  id="cameraChoice"
+  class="camera-list hidden"
+>
 
-<div id="error"></div>
+<select
+  id="cameraSelect"
+>
+</select>
+
+</div>
+
+
+<div
+  id="result"
+></div>
+
+
+<div
+  id="error"
+></div>
 
 
 <div class="small">
@@ -217,28 +251,32 @@ const WEB_APP_URL =
 
 let scanner = null;
 
+let cameras = [];
+
 let scanning = false;
 
 let completed = false;
 
-let starting = false;
-
 
 // ============================================================
-// 학생정보 표시
+// 학생 정보
 // ============================================================
 
 document
   .getElementById("studentInfo")
   .innerHTML =
+
     "<b>" +
     escapeHtml(studentNumber) +
     " " +
     escapeHtml(studentName) +
     "</b><br><br>" +
+
     "출결 : " +
     escapeHtml(action) +
+
     "<br><br>" +
+
     "교실 QR을 찍어주세요.";
 
 
@@ -266,125 +304,190 @@ if (
 
 
 // ============================================================
+// 카메라 목록 가져오기
+// ============================================================
+
+async function getCameraList() {
+
+  cameras =
+    await Html5Qrcode.getCameras();
+
+
+  if (
+    !cameras ||
+    cameras.length === 0
+  ) {
+
+    throw new Error(
+      "사용 가능한 카메라가 없습니다."
+    );
+  }
+
+
+  const select =
+    document
+      .getElementById(
+        "cameraSelect"
+      );
+
+
+  select.innerHTML =
+    "";
+
+
+  cameras.forEach(
+    function(camera, index) {
+
+      const option =
+        document.createElement(
+          "option"
+        );
+
+
+      option.value =
+        camera.id;
+
+
+      option.textContent =
+        camera.label ||
+        "카메라 " +
+        (index + 1);
+
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+
+  // ----------------------------------------------------------
+  // 모바일에서는 후면 카메라를 우선 선택
+  // 노트북에서는 첫 번째 카메라 사용
+  // ----------------------------------------------------------
+
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent
+    );
+
+
+  if (isMobile) {
+
+    const backCamera =
+      cameras.find(
+        function(camera) {
+
+          const label =
+            String(
+              camera.label || ""
+            ).toLowerCase();
+
+
+          return (
+            label.includes("back") ||
+            label.includes("rear") ||
+            label.includes("후면")
+          );
+
+        }
+      );
+
+
+    if (backCamera) {
+
+      select.value =
+        backCamera.id;
+
+    } else {
+
+      select.value =
+        cameras[
+          cameras.length - 1
+        ].id;
+
+    }
+
+  } else {
+
+    select.value =
+      cameras[0].id;
+
+  }
+
+
+  document
+    .getElementById(
+      "cameraChoice"
+    )
+    .classList
+    .remove("hidden");
+
+}
+
+
+// ============================================================
 // 카메라 시작
 // ============================================================
 
 async function startCamera() {
 
-  if (
-    starting ||
-    scanning ||
-    completed
-  ) {
-
+  if (scanning) {
     return;
   }
 
 
-  starting = true;
-
-
-  clearMessage();
+  clearMessages();
 
 
   try {
 
-    // ----------------------------------------------
-    // 새 스캐너 생성
-    // ----------------------------------------------
+    // --------------------------------------------------------
+    // 카메라 목록 확보
+    // --------------------------------------------------------
 
-    scanner =
-      new Html5Qrcode(
-        "reader"
+    await getCameraList();
+
+
+    // --------------------------------------------------------
+    // 첫 번째 카메라로 시작
+    // --------------------------------------------------------
+
+    const cameraId =
+      document
+        .getElementById(
+          "cameraSelect"
+        )
+        .value;
+
+
+    if (!cameraId) {
+
+      throw new Error(
+        "카메라를 선택할 수 없습니다."
       );
+    }
 
 
-    // ----------------------------------------------
-    // 후면 카메라를 직접 요청
-    // ----------------------------------------------
-
-    const cameraConfig = {
-
-      facingMode: {
-        exact: "environment"
-      }
-
-    };
-
-
-    const scanConfig = {
-
-      fps: 10,
-
-      qrbox: {
-        width: 260,
-        height: 260
-      },
-
-      aspectRatio: 1.0,
-
-      disableFlip: true
-
-    };
-
-
-    await scanner.start(
-
-      cameraConfig,
-
-      scanConfig,
-
-      function(decodedText) {
-
-        handleScan(decodedText);
-
-      },
-
-      function() {
-
-        // 스캔 중에는 아무 메시지도 표시하지 않음
-
-      }
-
+    await startWithCamera(
+      cameraId
     );
 
 
-    scanning = true;
-
-    starting = false;
-
-
-    document
-      .getElementById("startButton")
-      .classList
-      .add("hidden");
-
-
-    document
-      .getElementById("stopButton")
-      .classList
-      .remove("hidden");
-
-
   } catch (error) {
-
-    starting = false;
-
-    scanning = false;
-
 
     console.error(
       error
     );
 
 
-    // ----------------------------------------------
-    // environment 직접 요청이 실패하면
-    // 일반 카메라 설정으로 한 번 더 시도
-    // ----------------------------------------------
-
-    await retryCamera();
-
+    showError(
+      "❌ 카메라 시작 실패\n\n" +
+      error.name +
+      "\n" +
+      error.message
+    );
 
   }
 
@@ -392,91 +495,129 @@ async function startCamera() {
 
 
 // ============================================================
-// 보조 카메라 시작
+// 선택된 카메라로 시작
 // ============================================================
 
-async function retryCamera() {
+async function startWithCamera(
+  cameraId
+) {
 
-  try {
+  if (scanner) {
 
-    if (scanner) {
+    try {
+      await scanner.clear();
+    } catch(e) {}
 
-      try {
-        await scanner.clear();
-      } catch(e) {}
+  }
+
+
+  scanner =
+    new Html5Qrcode(
+      "reader"
+    );
+
+
+  const scanConfig = {
+
+    fps: 10,
+
+    qrbox: {
+      width: 260,
+      height: 260
+    },
+
+    aspectRatio: 1.0,
+
+    disableFlip: false
+
+  };
+
+
+  await scanner.start(
+
+    cameraId,
+
+    scanConfig,
+
+    function(decodedText) {
+
+      handleScan(
+        decodedText
+      );
+
+    },
+
+    function() {
+
+      // 검색 중에는 아무것도 표시하지 않음
 
     }
 
-
-    scanner =
-      new Html5Qrcode(
-        "reader"
-      );
+  );
 
 
-    const scanConfig = {
-
-      fps: 10,
-
-      qrbox: {
-        width: 260,
-        height: 260
-      },
-
-      aspectRatio: 1.0
-
-    };
+  scanning =
+    true;
 
 
-    await scanner.start(
-
-      {
-        facingMode: "environment"
-      },
-
-      scanConfig,
-
-      function(decodedText) {
-
-        handleScan(decodedText);
-
-      },
-
-      function() {}
-
-    );
+  document
+    .getElementById(
+      "startButton"
+    )
+    .classList
+    .add("hidden");
 
 
-    scanning = true;
-
-
-    document
-      .getElementById("startButton")
-      .classList
-      .add("hidden");
-
-
-    document
-      .getElementById("stopButton")
-      .classList
-      .remove("hidden");
-
-
-  } catch (error) {
-
-    scanning = false;
-
-    starting = false;
-
-
-    showError(
-      "❌ 카메라를 열 수 없습니다.\n\n" +
-      "이 페이지에서는 카메라 연결에 실패했습니다."
-    );
-
-  }
+  document
+    .getElementById(
+      "stopButton"
+    )
+    .classList
+    .remove("hidden");
 
 }
+
+
+// ============================================================
+// 카메라 변경
+// ============================================================
+
+document
+  .getElementById(
+    "cameraSelect"
+  )
+  .addEventListener(
+    "change",
+    async function() {
+
+      if (!scanning) {
+        return;
+      }
+
+
+      try {
+
+        await stopCamera();
+
+
+        await startWithCamera(
+          this.value
+        );
+
+
+      } catch (error) {
+
+        showError(
+          "카메라 변경 실패\n\n" +
+          error.name +
+          "\n" +
+          error.message
+        );
+
+      }
+
+    }
+  );
 
 
 // ============================================================
@@ -496,9 +637,12 @@ async function handleScan(
   }
 
 
-  completed = true;
+  completed =
+    true;
 
-  scanning = false;
+
+  scanning =
+    false;
 
 
   showResult(
@@ -511,7 +655,7 @@ async function handleScan(
 
 
   // ----------------------------------------------------------
-  // 서버 인증
+  // Apps Script 인증
   // ----------------------------------------------------------
 
   const verifyUrl =
@@ -559,7 +703,8 @@ async function stopCamera() {
 
   if (!scanner) {
 
-    scanning = false;
+    scanning =
+      false;
 
     return;
   }
@@ -572,7 +717,7 @@ async function stopCamera() {
   } catch (error) {
 
     console.warn(
-      "camera stop:",
+      "camera stop",
       error
     );
 
@@ -586,20 +731,24 @@ async function stopCamera() {
   } catch (error) {
 
     console.warn(
-      "scanner clear:",
+      "scanner clear",
       error
     );
 
   }
 
 
-  scanner = null;
+  scanner =
+    null;
 
-  scanning = false;
+  scanning =
+    false;
 
 
   document
-    .getElementById("stopButton")
+    .getElementById(
+      "stopButton"
+    )
     .classList
     .add("hidden");
 
@@ -607,7 +756,9 @@ async function stopCamera() {
   if (!completed) {
 
     document
-      .getElementById("startButton")
+      .getElementById(
+        "startButton"
+      )
       .classList
       .remove("hidden");
 
@@ -625,13 +776,17 @@ function showResult(
 ) {
 
   document
-    .getElementById("result")
+    .getElementById(
+      "result"
+    )
     .innerText =
       text;
 
 
   document
-    .getElementById("error")
+    .getElementById(
+      "error"
+    )
     .innerText =
       "";
 
@@ -643,29 +798,37 @@ function showError(
 ) {
 
   document
-    .getElementById("error")
+    .getElementById(
+      "error"
+    )
     .innerText =
       text;
 
 
   document
-    .getElementById("result")
+    .getElementById(
+      "result"
+    )
     .innerText =
       "";
 
 }
 
 
-function clearMessage() {
+function clearMessages() {
 
   document
-    .getElementById("result")
+    .getElementById(
+      "result"
+    )
     .innerText =
       "";
 
 
   document
-    .getElementById("error")
+    .getElementById(
+      "error"
+    )
     .innerText =
       "";
 
