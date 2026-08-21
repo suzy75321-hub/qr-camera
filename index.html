@@ -12,7 +12,7 @@
 
 <title>교실 QR 인증</title>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
 <style>
 
@@ -50,10 +50,35 @@ h1 {
   margin-bottom: 18px;
 }
 
-#reader {
+.camera-wrap {
+  position: relative;
   width: 100%;
   max-width: 380px;
   margin: 0 auto;
+  overflow: hidden;
+  border-radius: 15px;
+  background: #000;
+}
+
+#video {
+  width: 100%;
+  display: block;
+}
+
+#canvas {
+  display: none;
+}
+
+.scan-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 260px;
+  height: 260px;
+  transform: translate(-50%, -50%);
+  border: 3px solid white;
+  border-radius: 18px;
+  pointer-events: none;
 }
 
 .button {
@@ -103,19 +128,6 @@ h1 {
   display: none !important;
 }
 
-.camera-list {
-  margin-top: 15px;
-  text-align: left;
-}
-
-.camera-list select {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-  font-size: 15px;
-}
-
 </style>
 
 </head>
@@ -158,22 +170,21 @@ h1 {
 </button>
 
 
-<div
-  id="reader"
-></div>
+<div class="camera-wrap">
 
+<video
+  id="video"
+  autoplay
+  playsinline
+  muted
+></video>
 
-<div
-  id="cameraChoice"
-  class="camera-list hidden"
->
-
-<select
-  id="cameraSelect"
->
-</select>
+<div class="scan-frame"></div>
 
 </div>
+
+
+<canvas id="canvas"></canvas>
 
 
 <div
@@ -249,13 +260,38 @@ const WEB_APP_URL =
 // 상태
 // ============================================================
 
-let scanner = null;
-
-let cameras = [];
+let stream = null;
 
 let scanning = false;
 
 let completed = false;
+
+let animationFrame = null;
+
+
+// ============================================================
+// 화면 요소
+// ============================================================
+
+const video =
+  document.getElementById(
+    "video"
+  );
+
+
+const canvas =
+  document.getElementById(
+    "canvas"
+  );
+
+
+const context =
+  canvas.getContext(
+    "2d",
+    {
+      willReadFrequently: true
+    }
+  );
 
 
 // ============================================================
@@ -263,17 +299,25 @@ let completed = false;
 // ============================================================
 
 document
-  .getElementById("studentInfo")
+  .getElementById(
+    "studentInfo"
+  )
   .innerHTML =
 
     "<b>" +
-    escapeHtml(studentNumber) +
+    escapeHtml(
+      studentNumber
+    ) +
     " " +
-    escapeHtml(studentName) +
+    escapeHtml(
+      studentName
+    ) +
     "</b><br><br>" +
 
     "출결 : " +
-    escapeHtml(action) +
+    escapeHtml(
+      action
+    ) +
 
     "<br><br>" +
 
@@ -296,133 +340,12 @@ if (
     "조종례 앱에서 다시 시도해주세요."
   );
 
-  document
-    .getElementById("startButton")
-    .disabled = true;
-
-}
-
-
-// ============================================================
-// 카메라 목록 가져오기
-// ============================================================
-
-async function getCameraList() {
-
-  cameras =
-    await Html5Qrcode.getCameras();
-
-
-  if (
-    !cameras ||
-    cameras.length === 0
-  ) {
-
-    throw new Error(
-      "사용 가능한 카메라가 없습니다."
-    );
-  }
-
-
-  const select =
-    document
-      .getElementById(
-        "cameraSelect"
-      );
-
-
-  select.innerHTML =
-    "";
-
-
-  cameras.forEach(
-    function(camera, index) {
-
-      const option =
-        document.createElement(
-          "option"
-        );
-
-
-      option.value =
-        camera.id;
-
-
-      option.textContent =
-        camera.label ||
-        "카메라 " +
-        (index + 1);
-
-
-      select.appendChild(
-        option
-      );
-
-    }
-  );
-
-
-  // ----------------------------------------------------------
-  // 모바일에서는 후면 카메라를 우선 선택
-  // 노트북에서는 첫 번째 카메라 사용
-  // ----------------------------------------------------------
-
-  const isMobile =
-    /Android|iPhone|iPad|iPod/i.test(
-      navigator.userAgent
-    );
-
-
-  if (isMobile) {
-
-    const backCamera =
-      cameras.find(
-        function(camera) {
-
-          const label =
-            String(
-              camera.label || ""
-            ).toLowerCase();
-
-
-          return (
-            label.includes("back") ||
-            label.includes("rear") ||
-            label.includes("후면")
-          );
-
-        }
-      );
-
-
-    if (backCamera) {
-
-      select.value =
-        backCamera.id;
-
-    } else {
-
-      select.value =
-        cameras[
-          cameras.length - 1
-        ].id;
-
-    }
-
-  } else {
-
-    select.value =
-      cameras[0].id;
-
-  }
-
 
   document
     .getElementById(
-      "cameraChoice"
+      "startButton"
     )
-    .classList
-    .remove("hidden");
+    .disabled = true;
 
 }
 
@@ -433,7 +356,11 @@ async function getCameraList() {
 
 async function startCamera() {
 
-  if (scanning) {
+  if (
+    scanning ||
+    completed
+  ) {
+
     return;
   }
 
@@ -443,36 +370,72 @@ async function startCamera() {
 
   try {
 
-    // --------------------------------------------------------
-    // 카메라 목록 확보
-    // --------------------------------------------------------
-
-    await getCameraList();
-
-
-    // --------------------------------------------------------
-    // 첫 번째 카메라로 시작
-    // --------------------------------------------------------
-
-    const cameraId =
-      document
-        .getElementById(
-          "cameraSelect"
-        )
-        .value;
-
-
-    if (!cameraId) {
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
 
       throw new Error(
-        "카메라를 선택할 수 없습니다."
+        "이 브라우저에서는 카메라 기능을 사용할 수 없습니다."
       );
+
     }
 
 
-    await startWithCamera(
-      cameraId
+    // --------------------------------------------------------
+    // 카메라 요청
+    // 휴대폰에서는 후면 카메라 우선
+    // 노트북에서는 사용 가능한 카메라 자동 사용
+    // --------------------------------------------------------
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video: {
+          facingMode: {
+            ideal: "environment"
+          }
+        },
+
+        audio: false
+
+      });
+
+
+    video.srcObject =
+      stream;
+
+
+    await video.play();
+
+
+    scanning =
+      true;
+
+
+    document
+      .getElementById(
+        "startButton"
+      )
+      .classList
+      .add("hidden");
+
+
+    document
+      .getElementById(
+        "stopButton"
+      )
+      .classList
+      .remove("hidden");
+
+
+    showResult(
+      "📷 카메라가 켜졌습니다.\n" +
+      "교실 QR을 화면 안에 맞춰주세요."
     );
+
+
+    scanLoop();
 
 
   } catch (error) {
@@ -483,7 +446,7 @@ async function startCamera() {
 
 
     showError(
-      "❌ 카메라 시작 실패\n\n" +
+      "❌ 카메라를 열 수 없습니다.\n\n" +
       error.name +
       "\n" +
       error.message
@@ -495,136 +458,120 @@ async function startCamera() {
 
 
 // ============================================================
-// 선택된 카메라로 시작
+// QR 반복 스캔
 // ============================================================
 
-async function startWithCamera(
-  cameraId
-) {
+function scanLoop() {
 
-  if (scanner) {
+  if (
+    !scanning ||
+    completed
+  ) {
 
-    try {
-      await scanner.clear();
-    } catch(e) {}
-
+    return;
   }
 
 
-  scanner =
-    new Html5Qrcode(
-      "reader"
+  if (
+    video.readyState <
+    HTMLMediaElement.HAVE_CURRENT_DATA
+  ) {
+
+    animationFrame =
+      requestAnimationFrame(
+        scanLoop
+      );
+
+    return;
+  }
+
+
+  const width =
+    video.videoWidth;
+
+
+  const height =
+    video.videoHeight;
+
+
+  if (
+    !width ||
+    !height
+  ) {
+
+    animationFrame =
+      requestAnimationFrame(
+        scanLoop
+      );
+
+    return;
+  }
+
+
+  canvas.width =
+    width;
+
+
+  canvas.height =
+    height;
+
+
+  context.drawImage(
+    video,
+    0,
+    0,
+    width,
+    height
+  );
+
+
+  const imageData =
+    context.getImageData(
+      0,
+      0,
+      width,
+      height
     );
 
 
-  const scanConfig = {
-
-    fps: 10,
-
-    qrbox: {
-      width: 260,
-      height: 260
-    },
-
-    aspectRatio: 1.0,
-
-    disableFlip: false
-
-  };
+  const code =
+    jsQR(
+      imageData.data,
+      imageData.width,
+      imageData.height,
+      {
+        inversionAttempts:
+          "attemptBoth"
+      }
+    );
 
 
-  await scanner.start(
+  if (
+    code &&
+    code.data
+  ) {
 
-    cameraId,
+    handleQrScan(
+      code.data
+    );
 
-    scanConfig,
-
-    function(decodedText) {
-
-      handleScan(
-        decodedText
-      );
-
-    },
-
-    function() {
-
-      // 검색 중에는 아무것도 표시하지 않음
-
-    }
-
-  );
+    return;
+  }
 
 
-  scanning =
-    true;
-
-
-  document
-    .getElementById(
-      "startButton"
-    )
-    .classList
-    .add("hidden");
-
-
-  document
-    .getElementById(
-      "stopButton"
-    )
-    .classList
-    .remove("hidden");
+  animationFrame =
+    requestAnimationFrame(
+      scanLoop
+    );
 
 }
-
-
-// ============================================================
-// 카메라 변경
-// ============================================================
-
-document
-  .getElementById(
-    "cameraSelect"
-  )
-  .addEventListener(
-    "change",
-    async function() {
-
-      if (!scanning) {
-        return;
-      }
-
-
-      try {
-
-        await stopCamera();
-
-
-        await startWithCamera(
-          this.value
-        );
-
-
-      } catch (error) {
-
-        showError(
-          "카메라 변경 실패\n\n" +
-          error.name +
-          "\n" +
-          error.message
-        );
-
-      }
-
-    }
-  );
 
 
 // ============================================================
 // QR 스캔 성공
 // ============================================================
 
-async function handleScan(
+async function handleQrScan(
   decodedText
 ) {
 
@@ -645,17 +592,30 @@ async function handleScan(
     false;
 
 
+  if (
+    animationFrame
+  ) {
+
+    cancelAnimationFrame(
+      animationFrame
+    );
+
+    animationFrame =
+      null;
+  }
+
+
   showResult(
     "✅ QR을 확인했습니다.\n" +
     "출결을 처리하고 있습니다..."
   );
 
 
-  await stopCamera();
+  stopCamera();
 
 
   // ----------------------------------------------------------
-  // Apps Script 인증
+  // Apps Script 인증 요청
   // ----------------------------------------------------------
 
   const verifyUrl =
@@ -689,6 +649,10 @@ async function handleScan(
     );
 
 
+  // ----------------------------------------------------------
+  // 서버에서 고정 QR 검증
+  // ----------------------------------------------------------
+
   window.location.href =
     verifyUrl;
 
@@ -699,50 +663,46 @@ async function handleScan(
 // 카메라 종료
 // ============================================================
 
-async function stopCamera() {
-
-  if (!scanner) {
-
-    scanning =
-      false;
-
-    return;
-  }
-
-
-  try {
-
-    await scanner.stop();
-
-  } catch (error) {
-
-    console.warn(
-      "camera stop",
-      error
-    );
-
-  }
-
-
-  try {
-
-    await scanner.clear();
-
-  } catch (error) {
-
-    console.warn(
-      "scanner clear",
-      error
-    );
-
-  }
-
-
-  scanner =
-    null;
+function stopCamera() {
 
   scanning =
     false;
+
+
+  if (
+    animationFrame
+  ) {
+
+    cancelAnimationFrame(
+      animationFrame
+    );
+
+    animationFrame =
+      null;
+  }
+
+
+  if (stream) {
+
+    stream
+      .getTracks()
+      .forEach(
+        function(track) {
+
+          track.stop();
+
+        }
+      );
+
+
+    stream =
+      null;
+
+  }
+
+
+  video.srcObject =
+    null;
 
 
   document
@@ -753,7 +713,9 @@ async function stopCamera() {
     .add("hidden");
 
 
-  if (!completed) {
+  if (
+    !completed
+  ) {
 
     document
       .getElementById(
@@ -765,6 +727,20 @@ async function stopCamera() {
   }
 
 }
+
+
+// ============================================================
+// 페이지를 떠날 때 카메라 종료
+// ============================================================
+
+window.addEventListener(
+  "pagehide",
+  function() {
+
+    stopCamera();
+
+  }
+);
 
 
 // ============================================================
@@ -802,6 +778,7 @@ function showError(
       "error"
     )
     .innerText =
+      "❌ " +
       text;
 
 
