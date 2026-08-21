@@ -4,15 +4,11 @@
 <head>
 
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>교실 QR 인증</title>
 
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <style>
 
@@ -55,7 +51,6 @@ h1 {
   width: 100%;
   padding: 17px;
   margin: 8px 0;
-  border: none;
   border-radius: 14px;
   background: #333;
   color: white;
@@ -64,12 +59,13 @@ h1 {
   cursor: pointer;
 }
 
-.file-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+#qrInput {
+  display: none;
+}
+
+#reader {
+  width: 100%;
+  margin-top: 15px;
 }
 
 #result {
@@ -85,7 +81,6 @@ h1 {
   font-weight: bold;
   line-height: 1.5;
   white-space: pre-line;
-  word-break: break-word;
 }
 
 .small {
@@ -93,11 +88,6 @@ h1 {
   font-size: 13px;
   line-height: 1.5;
   margin-top: 14px;
-}
-
-.loading {
-  background: #eeeeee;
-  color: #555;
 }
 
 </style>
@@ -123,21 +113,22 @@ h1 {
 
 
 <label
-  for="qrImage"
+  for="qrInput"
   class="camera-button"
-  id="cameraButton"
 >
 📷 교실 QR 찍기
 </label>
 
 
 <input
-  id="qrImage"
-  class="file-input"
+  id="qrInput"
   type="file"
   accept="image/*"
   capture="environment"
 >
+
+
+<div id="reader"></div>
 
 
 <div id="result"></div>
@@ -148,19 +139,14 @@ h1 {
 <div class="small">
 
 교실에 있는 고정 QR을 찍어주세요.<br>
-
-촬영한 QR이 확인되면<br>
-
-<b>QR을 찍은 시간이 실제 등교/복귀 시간으로 기록됩니다.</b>
+촬영한 사진은 이 페이지에서만 QR 판독에 사용됩니다.
 
 </div>
-
 
 </div>
 
 
 <script>
-
 
 // ============================================================
 // URL 정보
@@ -197,7 +183,7 @@ const returnUrl =
 
 
 // ============================================================
-// Apps Script 주소
+// Apps Script
 // ============================================================
 
 const WEB_APP_URL =
@@ -205,7 +191,7 @@ const WEB_APP_URL =
 
 
 // ============================================================
-// 화면 정보
+// 화면 표시
 // ============================================================
 
 document
@@ -223,28 +209,13 @@ document
 
 
 // ============================================================
-// 필수 정보 검사
+// QR 스캐너 객체
 // ============================================================
 
-if (
-  !studentNumber ||
-  !studentName ||
-  !action ||
-  !returnUrl
-) {
-
-  showError(
-    "인증 정보가 없습니다.\n" +
-    "조종례 앱에서 다시 시도해주세요."
+const scanner =
+  new Html5Qrcode(
+    "reader"
   );
-
-
-  document
-    .getElementById("cameraButton")
-    .style.pointerEvents =
-      "none";
-
-}
 
 
 // ============================================================
@@ -252,282 +223,90 @@ if (
 // ============================================================
 
 document
-  .getElementById("qrImage")
+  .getElementById("qrInput")
   .addEventListener(
     "change",
-    handleImage
-  );
+    async function(event) {
+
+      const file =
+        event.target.files &&
+        event.target.files[0];
 
 
-// ============================================================
-// 이미지 처리
-// ============================================================
-
-async function handleImage(event) {
-
-  const file =
-    event.target.files &&
-    event.target.files[0];
+      if (!file) {
+        return;
+      }
 
 
-  if (!file) {
-    return;
-  }
+      clearMessages();
 
 
-  clearMessages();
-
-
-  setLoading(
-    true
-  );
-
-
-  try {
-
-    showResult(
-      "📷 사진을 확인하고 있습니다..."
-    );
-
-
-    // --------------------------------------------------------
-    // 이미지 객체 생성
-    // --------------------------------------------------------
-
-    const image =
-      await loadImage(
-        file
+      showResult(
+        "📷 촬영한 사진에서 QR을 찾는 중입니다..."
       );
 
 
-    // --------------------------------------------------------
-    // QR 판독을 위해 Canvas에 그림
-    // --------------------------------------------------------
+      try {
 
-    const canvas =
-      document.createElement(
-        "canvas"
-      );
+        // ------------------------------------------------------
+        // html5-qrcode 공식 파일 스캔
+        // ------------------------------------------------------
+
+        const decodedText =
+          await scanner.scanFile(
+            file,
+            false
+          );
 
 
-    const context =
-      canvas.getContext(
-        "2d",
-        {
-          willReadFrequently: true
+        if (!decodedText) {
+
+          throw new Error(
+            "QR 내용을 읽지 못했습니다."
+          );
+
         }
-      );
 
 
-    const maxSize =
-      1600;
-
-
-    let width =
-      image.naturalWidth ||
-      image.width;
-
-
-    let height =
-      image.naturalHeight ||
-      image.height;
-
-
-    // 너무 큰 사진 축소
-    if (
-      width >
-      maxSize ||
-      height >
-      maxSize
-    ) {
-
-      const ratio =
-        Math.min(
-          maxSize / width,
-          maxSize / height
+        showResult(
+          "✅ QR을 읽었습니다.\n" +
+          "학생 정보를 확인하고 있습니다..."
         );
 
 
-      width =
-        Math.round(
-          width * ratio
+        verifyQr(
+          decodedText
         );
 
 
-      height =
-        Math.round(
-          height * ratio
-        );
+      } catch(error) {
 
-    }
-
-
-    canvas.width =
-      width;
-
-
-    canvas.height =
-      height;
-
-
-    context.drawImage(
-      image,
-      0,
-      0,
-      width,
-      height
-    );
-
-
-    const imageData =
-      context.getImageData(
-        0,
-        0,
-        width,
-        height
-      );
-
-
-    // --------------------------------------------------------
-    // QR 읽기
-    // --------------------------------------------------------
-
-    const qr =
-      jsQR(
-        imageData.data,
-        imageData.width,
-        imageData.height,
-        {
-          inversionAttempts:
-            "attemptBoth"
-        }
-      );
-
-
-    if (
-      !qr ||
-      !qr.data
-    ) {
-
-      throw new Error(
-        "사진에서 QR을 찾지 못했습니다.\n" +
-        "QR이 화면에 선명하게 나오도록 다시 찍어주세요."
-      );
-
-    }
-
-
-    // --------------------------------------------------------
-    // QR 발견
-    // --------------------------------------------------------
-
-    showResult(
-      "✅ QR을 읽었습니다.\n" +
-      "출결을 확인하고 있습니다..."
-    );
-
-
-    await verifyQr(
-      qr.data
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      error
-    );
-
-
-    showError(
-      "❌ " +
-      error.message
-    );
-
-
-  } finally {
-
-    setLoading(
-      false
-    );
-
-
-    // 같은 사진을 다시 선택할 수 있도록 초기화
-    event.target.value =
-      "";
-
-  }
-
-}
-
-
-// ============================================================
-// 이미지 로드
-// ============================================================
-
-function loadImage(
-  file
-) {
-
-  return new Promise(
-    function(resolve, reject) {
-
-      const url =
-        URL.createObjectURL(
-          file
+        console.error(
+          error
         );
 
 
-      const image =
-        new Image();
+        showError(
+          "❌ QR을 읽지 못했습니다.\n\n" +
+          "QR이 사진에 선명하게 나오도록\n" +
+          "조금 가까이에서 다시 찍어주세요."
+        );
+
+      }
 
 
-      image.onload =
-        function() {
-
-          URL.revokeObjectURL(
-            url
-          );
-
-
-          resolve(
-            image
-          );
-
-        };
-
-
-      image.onerror =
-        function() {
-
-          URL.revokeObjectURL(
-            url
-          );
-
-
-          reject(
-            new Error(
-              "촬영한 이미지를 읽을 수 없습니다."
-            )
-          );
-
-        };
-
-
-      image.src =
-        url;
+      // 같은 사진도 다시 선택 가능하도록 초기화
+      event.target.value = "";
 
     }
   );
 
-}
-
 
 // ============================================================
-// QR 서버 인증
+// QR 인증 서버 요청
 // ============================================================
 
-async function verifyQr(
+function verifyQr(
   decodedText
 ) {
 
@@ -564,47 +343,6 @@ async function verifyQr(
 
   window.location.href =
     verifyUrl;
-
-}
-
-
-// ============================================================
-// 버튼 상태
-// ============================================================
-
-function setLoading(
-  loading
-) {
-
-  const button =
-    document.getElementById(
-      "cameraButton"
-    );
-
-
-  if (loading) {
-
-    button.innerText =
-      "⏳ QR 확인 중...";
-
-
-    button.classList.add(
-      "loading"
-    );
-
-
-  } else {
-
-    button.innerText =
-      "📷 교실 QR 찍기";
-
-
-    button.classList.remove(
-      "loading"
-    );
-
-  }
-
 }
 
 
@@ -687,26 +425,11 @@ function escapeHtml(
   return String(
     value || ""
   )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 }
 
