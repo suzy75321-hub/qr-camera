@@ -63,6 +63,8 @@ h1 {
 #video {
   width: 100%;
   display: block;
+  min-height: 220px;
+  object-fit: cover;
 }
 
 #canvas {
@@ -135,7 +137,9 @@ h1 {
 
 <body>
 
+
 <div class="box">
+
 
 <h1>
 📷 교실 QR 인증
@@ -187,14 +191,9 @@ h1 {
 <canvas id="canvas"></canvas>
 
 
-<div
-  id="result"
-></div>
+<div id="result"></div>
 
-
-<div
-  id="error"
-></div>
+<div id="error"></div>
 
 
 <div class="small">
@@ -383,22 +382,14 @@ async function startCamera() {
 
 
     // --------------------------------------------------------
-    // 카메라 요청
-    // 휴대폰에서는 후면 카메라 우선
-    // 노트북에서는 사용 가능한 카메라 자동 사용
+    // 중요:
+    // 카메라 테스트에서 성공했던 방식 그대로 사용
     // --------------------------------------------------------
 
     stream =
       await navigator.mediaDevices.getUserMedia({
-
-        video: {
-          facingMode: {
-            ideal: "environment"
-          }
-        },
-
+        video: true,
         audio: false
-
       });
 
 
@@ -447,8 +438,10 @@ async function startCamera() {
 
     showError(
       "❌ 카메라를 열 수 없습니다.\n\n" +
+      "오류 종류: " +
       error.name +
       "\n" +
+      "오류 내용: " +
       error.message
     );
 
@@ -483,6 +476,7 @@ function scanLoop() {
       );
 
     return;
+
   }
 
 
@@ -505,6 +499,7 @@ function scanLoop() {
       );
 
     return;
+
   }
 
 
@@ -556,6 +551,7 @@ function scanLoop() {
     );
 
     return;
+
   }
 
 
@@ -571,7 +567,7 @@ function scanLoop() {
 // QR 스캔 성공
 // ============================================================
 
-async function handleQrScan(
+function handleQrScan(
   decodedText
 ) {
 
@@ -602,6 +598,7 @@ async function handleQrScan(
 
     animationFrame =
       null;
+
   }
 
 
@@ -615,7 +612,7 @@ async function handleQrScan(
 
 
   // ----------------------------------------------------------
-  // Apps Script 인증 요청
+  // Apps Script 서버로 QR 인증 요청
   // ----------------------------------------------------------
 
   const verifyUrl =
@@ -648,10 +645,6 @@ async function handleQrScan(
       returnUrl
     );
 
-
-  // ----------------------------------------------------------
-  // 서버에서 고정 QR 검증
-  // ----------------------------------------------------------
 
   window.location.href =
     verifyUrl;
@@ -778,7 +771,6 @@ function showError(
       "error"
     )
     .innerText =
-      "❌ " +
       text;
 
 
