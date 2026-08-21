@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>카메라 테스트</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .box {
+      max-width: 430px;
+      margin: auto;
+      background: white;
+      padding: 25px 20px 30px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    video {
+      width: 100%;
+      max-width: 380px;
+      background: #000;
+      border-radius: 15px;
+      display: block;
+      margin: 15px auto;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 12px;
+      background: #333;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+    }
+
+    #message {
+      margin-top: 18px;
+      line-height: 1.5;
+      white-space: pre-line;
+      font-weight: bold;
+    }
+
+    #error {
+      margin-top: 15px;
+      color: #c62828;
+      line-height: 1.5;
+      white-space: pre-line;
+      word-break: break-word;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>📷 카메라 테스트</h1>
+
+  <button onclick="startCamera()">
+    카메라 시작
+  </button>
+
+  <video
+    id="video"
+    autoplay
+    playsinline
+    muted
+  ></video>
+
+  <div id="message">
+    카메라 시작 버튼을 눌러주세요.
+  </div>
+
+  <div id="error"></div>
+
+</div>
+
+
+<script>
+
+let stream = null;
+
+
+async function startCamera() {
+
+  document.getElementById("message").innerText =
+    "카메라를 준비하는 중입니다...";
+
+  document.getElementById("error").innerText =
+    "";
+
+
+  try {
+
+    if (!navigator.mediaDevices) {
+
+      throw new Error(
+        "이 브라우저에서는 카메라 API를 사용할 수 없습니다."
+      );
+
+    }
+
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+
+
+    const video =
+      document.getElementById("video");
+
+
+    video.srcObject =
+      stream;
+
+
+    document.getElementById("message").innerText =
+      "✅ 카메라가 정상적으로 열렸습니다.";
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    document.getElementById("message").innerText =
+      "❌ 카메라를 열지 못했습니다.";
+
+
+    document.getElementById("error").innerText =
+      "오류 종류: " +
+      error.name +
+      "\n\n" +
+      "오류 내용: " +
+      error.message;
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>
