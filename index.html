@@ -1,293 +1,908 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>QR 인증</title>
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
+<title>수지쌤 QR 출석</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-body{
-  font-family:Arial,sans-serif;
-  text-align:center;
-  padding:20px;
-  background:#f5f7fb;
+
+*{
+  box-sizing:border-box;
 }
 
-.box{
-  max-width:420px;
-  margin:auto;
-  background:white;
-  padding:25px;
+html,
+body{
+  margin:0;
+  padding:0;
+  width:100%;
+  min-height:100%;
+}
+
+body{
+  min-height:100vh;
+  background:#f5f7fb;
+  font-family:
+    "Noto Sans KR",
+    "Malgun Gothic",
+    Arial,
+    sans-serif;
+  color:#1e293b;
+}
+
+.page{
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:20px;
+}
+
+.card{
+  width:100%;
+  max-width:500px;
+  background:#ffffff;
+  border-radius:28px;
+  padding:28px 20px 30px;
+  box-shadow:
+    0 12px 35px rgba(15,23,42,.12);
+  text-align:center;
+}
+
+.icon{
+  font-size:52px;
+  margin-bottom:8px;
+}
+
+h1{
+  margin:0;
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:-1px;
+}
+
+.subtitle{
+  margin-top:10px;
+  color:#64748b;
+  font-size:15px;
+  line-height:1.6;
+}
+
+.student{
+  margin-top:18px;
+  padding:13px;
+  background:#eff6ff;
+  border-radius:15px;
+  color:#1e40af;
+  font-size:17px;
+  font-weight:800;
+}
+
+#reader{
+  width:100%;
+  margin-top:20px;
+  overflow:hidden;
   border-radius:20px;
-  box-shadow:0 4px 15px rgba(0,0,0,.1);
+}
+
+#reader video{
+  width:100% !important;
+  border-radius:20px;
 }
 
 button{
   width:100%;
-  padding:16px;
-  margin-top:15px;
   border:0;
-  border-radius:12px;
-  background:#333;
+  border-radius:17px;
+  padding:17px;
+  margin-top:18px;
+  background:#2563eb;
   color:white;
+  font-family:inherit;
   font-size:18px;
-  font-weight:bold;
+  font-weight:800;
 }
 
-#reader{
-  margin-top:20px;
+button:active{
+  transform:scale(.98);
 }
 
-#result{
-  margin-top:15px;
-  color:green;
-  font-weight:bold;
+.stop{
+  background:#64748b;
 }
 
-#error{
-  margin-top:15px;
-  color:red;
-  white-space:pre-line;
+.message{
+  display:none;
+  margin-top:18px;
+  padding:17px;
+  border-radius:17px;
+  font-weight:800;
+  line-height:1.6;
 }
+
+.success{
+  display:block;
+  background:#dcfce7;
+  color:#166534;
+}
+
+.error{
+  display:block;
+  background:#fee2e2;
+  color:#991b1b;
+}
+
+.scan-guide{
+  margin-top:13px;
+  color:#64748b;
+  font-size:14px;
+  line-height:1.6;
+}
+
+.hidden{
+  display:none;
+}
+
 </style>
-
 </head>
 
 
 <body>
 
-<div class="box">
+<div class="page">
 
-<h1>📷 QR 인증</h1>
+  <main class="card">
 
-<p>
-교실 QR을 촬영해주세요.<br>
-QR 촬영 시간이<br>
-실제 등교/복귀 시간으로 기록됩니다.
-</p>
+    <div class="icon">
+      📷
+    </div>
 
+    <h1>
+      수지쌤 저 왔어요
+    </h1>
 
-<div id="studentInfo"></div>
-
-
-<button onclick="startCamera()">
-📷 카메라 시작
-</button>
+    <div class="subtitle">
+      교실 QR을 스캔해주세요.
+    </div>
 
 
-<div id="reader"></div>
+    <div
+      id="student"
+      class="student hidden">
+    </div>
 
 
-<div id="result"></div>
+    <button
+      id="startButton"
+      type="button"
+      onclick="startCamera()">
 
-<div id="error"></div>
+      📷 카메라 시작
 
+    </button>
+
+
+    <div
+      id="reader">
+    </div>
+
+
+    <div class="scan-guide">
+      카메라가 열리면<br>
+      교실에 붙어 있는 QR을 화면 가운데 맞춰주세요.
+    </div>
+
+
+    <button
+      id="stopButton"
+      class="stop hidden"
+      type="button"
+      onclick="stopCamera()">
+
+      카메라 닫기
+
+    </button>
+
+
+    <div
+      id="message"
+      class="message">
+    </div>
+
+  </main>
 
 </div>
 
 
-
 <script>
 
-
-const params =
-new URLSearchParams(location.search);
-
-
-const studentNumber =
-params.get("studentNumber") || "";
-
-const studentName =
-params.get("studentName") || "";
-
-const action =
-params.get("action") || "";
-
-
-document.getElementById("studentInfo").innerHTML =
-`
-<b>${studentNumber} ${studentName}</b><br>
-${action}
-`;
-
-
+/* =====================================
+   기본 설정
+===================================== */
 
 const WEB_APP_URL =
 "https://script.google.com/macros/s/AKfycbwjXwujbqVUqpDpxdjlqdOTzPLu-6sLA0bMKnVKuc_cWpkC_R99fLfI49ZfvjHTUwxI/exec";
 
 
+const FIXED_QR =
+"SUZY_CLASSROOM_QR_2026_FIXED_01";
 
-let html5QrCode;
+
+let scanner = null;
+
+let cameraRunning = false;
+
+let processing = false;
 
 
+/* =====================================
+   URL에서 학생 정보 가져오기
+===================================== */
+
+const params =
+new URLSearchParams(
+  window.location.search
+);
+
+
+const studentNumber =
+params.get("studentNumber") || "";
+
+
+const studentName =
+params.get("studentName") || "";
+
+
+const action =
+params.get("action") || "등교";
+
+
+/* =====================================
+   학생 표시
+===================================== */
+
+function showStudent(){
+
+  const box =
+    document.getElementById("student");
+
+
+  if(
+    studentNumber &&
+    studentName
+  ){
+
+    box.textContent =
+      studentNumber +
+      "번 " +
+      studentName +
+      " 학생";
+
+
+    box.classList.remove(
+      "hidden"
+    );
+
+  }
+
+}
+
+
+/* =====================================
+   메시지
+===================================== */
+
+function showMessage(
+  text,
+  type
+){
+
+  const box =
+    document.getElementById("message");
+
+
+  box.className =
+    "message " +
+    type;
+
+
+  box.innerHTML =
+    text;
+
+
+  box.style.display =
+    "block";
+
+}
+
+
+function clearMessage(){
+
+  const box =
+    document.getElementById("message");
+
+  box.style.display =
+    "none";
+
+  box.className =
+    "message";
+
+  box.innerHTML =
+    "";
+
+}
+
+
+/* =====================================
+   카메라 시작
+===================================== */
 
 async function startCamera(){
 
-
-try{
-
-
-html5QrCode =
-new Html5Qrcode("reader");
+  clearMessage();
 
 
+  if(cameraRunning){
+    return;
+  }
 
-const cameras =
-await Html5Qrcode.getCameras();
+
+  if(
+    typeof Html5Qrcode ===
+    "undefined"
+  ){
+
+    showMessage(
+      "QR 카메라 모듈을 불러오지 못했습니다.<br>잠시 후 다시 시도해주세요.",
+      "error"
+    );
+
+    return;
+  }
 
 
+  try{
 
-if(!cameras.length){
+    scanner =
+      new Html5Qrcode(
+        "reader"
+      );
 
-throw new Error(
-"카메라를 찾을 수 없습니다."
+
+    /*
+     * 먼저 후면 카메라를 직접 요청
+     */
+
+    await scanner.start(
+
+      {
+        facingMode:{
+          exact:"environment"
+        }
+      },
+
+      {
+        fps:10,
+
+        qrbox:function(
+          width,
+          height
+        ){
+
+          const size =
+            Math.floor(
+              Math.min(
+                width,
+                height
+              ) * 0.70
+            );
+
+
+          return{
+            width:size,
+            height:size
+          };
+
+        },
+
+        aspectRatio:1.0,
+
+        disableFlip:false
+
+      },
+
+      function(decodedText){
+
+        handleQR(
+          decodedText
+        );
+
+      },
+
+      function(errorMessage){
+
+        /*
+         * QR 탐색 중 발생하는
+         * 일반적인 오류는 표시하지 않음
+         */
+
+      }
+
+    );
+
+
+    cameraRunning =
+      true;
+
+
+    document
+      .getElementById(
+        "startButton"
+      )
+      .classList.add(
+        "hidden"
+      );
+
+
+    document
+      .getElementById(
+        "stopButton"
+      )
+      .classList.remove(
+        "hidden"
+      );
+
+
+  }catch(error){
+
+    console.error(
+      "카메라 시작 오류:",
+      error
+    );
+
+
+    /*
+     * exact environment가
+     * 지원되지 않는 기기 대비
+     * 일반 environment로 한 번 더 시도
+     */
+
+    try{
+
+      if(scanner){
+
+        try{
+          await scanner.clear();
+        }catch(e){}
+
+      }
+
+
+      scanner =
+        new Html5Qrcode(
+          "reader"
+        );
+
+
+      await scanner.start(
+
+        {
+          facingMode:
+            "environment"
+        },
+
+        {
+          fps:10,
+
+          qrbox:{
+            width:280,
+            height:280
+          },
+
+          aspectRatio:1.0,
+
+          disableFlip:false
+
+        },
+
+        function(decodedText){
+
+          handleQR(
+            decodedText
+          );
+
+        },
+
+        function(){
+
+        }
+
+      );
+
+
+      cameraRunning =
+        true;
+
+
+      document
+        .getElementById(
+          "startButton"
+        )
+        .classList.add(
+          "hidden"
+        );
+
+
+      document
+        .getElementById(
+          "stopButton"
+        )
+        .classList.remove(
+          "hidden"
+        );
+
+
+    }catch(secondError){
+
+      console.error(
+        "카메라 재시도 오류:",
+        secondError
+      );
+
+
+      cameraRunning =
+        false;
+
+
+      scanner =
+        null;
+
+
+      showMessage(
+
+        "⚠️ 카메라를 시작할 수 없습니다.<br><br>" +
+
+        "브라우저의 카메라 권한을 확인해주세요.<br>" +
+
+        "현재 페이지 주소가 <b>https://</b>로 시작하는지도 확인해주세요.",
+
+        "error"
+
+      );
+
+    }
+
+  }
+
+}
+
+
+/* =====================================
+   QR 처리
+===================================== */
+
+async function handleQR(
+  decodedText
+){
+
+  if(processing){
+    return;
+  }
+
+
+  const value =
+    String(
+      decodedText || ""
+    ).trim();
+
+
+  /*
+   * 우리 반 고정 QR인지 확인
+   */
+
+  if(
+    value !== FIXED_QR
+  ){
+
+    showMessage(
+      "⚠️ 우리 반 교실 QR이 아닙니다.",
+      "error"
+    );
+
+    return;
+  }
+
+
+  processing =
+    true;
+
+
+  await stopCamera();
+
+
+  showMessage(
+    "⏳ QR 인증 완료<br>등교 기록을 저장하고 있습니다...",
+    "success"
+  );
+
+
+  /*
+   * 학생 정보가 있는 경우
+   * Apps Script로 전송
+   */
+
+  const data = {
+
+    studentNumber:
+      studentNumber,
+
+    studentName:
+      studentName,
+
+    action:
+      action,
+
+    qr:
+      value
+
+  };
+
+
+  try{
+
+    const response =
+      await fetch(
+
+        WEB_APP_URL,
+
+        {
+
+          method:"POST",
+
+          headers:{
+            "Content-Type":
+              "text/plain;charset=utf-8"
+          },
+
+          body:
+            JSON.stringify(
+              data
+            )
+
+        }
+
+      );
+
+
+    const text =
+      await response.text();
+
+
+    let result;
+
+
+    try{
+
+      result =
+        JSON.parse(
+          text
+        );
+
+    }catch(e){
+
+      result = {
+        success:true,
+        message:
+          "QR 인증이 완료되었습니다."
+      };
+
+    }
+
+
+    if(
+      result &&
+      result.success === false
+    ){
+
+      throw new Error(
+        result.message ||
+        "출석 저장에 실패했습니다."
+      );
+
+    }
+
+
+    showMessage(
+
+      "✅ 등교 인증 완료!<br>" +
+
+      (
+        result &&
+        result.message
+          ? escapeHtml(
+              result.message
+            )
+          : "오늘 등교가 기록되었습니다."
+      ),
+
+      "success"
+
+    );
+
+
+  }catch(error){
+
+    console.error(
+      "저장 오류:",
+      error
+    );
+
+
+    showMessage(
+
+      "⚠️ QR은 정상적으로 인식했지만<br>" +
+      "출석 기록 저장에 실패했습니다.<br><br>" +
+      escapeHtml(
+        error.message ||
+        "서버 연결 오류"
+      ),
+
+      "error"
+
+    );
+
+  }
+
+
+  processing =
+    false;
+
+}
+
+
+/* =====================================
+   카메라 종료
+===================================== */
+
+async function stopCamera(){
+
+  if(!scanner){
+
+    cameraRunning =
+      false;
+
+    return;
+  }
+
+
+  try{
+
+    await scanner.stop();
+
+  }catch(error){
+
+    console.log(
+      "카메라 종료:",
+      error
+    );
+
+  }
+
+
+  try{
+
+    scanner.clear();
+
+  }catch(error){
+
+  }
+
+
+  scanner =
+    null;
+
+
+  cameraRunning =
+    false;
+
+
+  document
+    .getElementById(
+      "stopButton"
+    )
+    .classList.add(
+      "hidden"
+    );
+
+
+  document
+    .getElementById(
+      "startButton"
+    )
+    .classList.remove(
+      "hidden"
+    );
+
+}
+
+
+/* =====================================
+   HTML 안전 처리
+===================================== */
+
+function escapeHtml(
+  value
+){
+
+  return String(
+    value || ""
+  )
+
+  .replace(
+    /&/g,
+    "&amp;"
+  )
+
+  .replace(
+    /</g,
+    "&lt;"
+  )
+
+  .replace(
+    />/g,
+    "&gt;"
+  )
+
+  .replace(
+    /"/g,
+    "&quot;"
+  )
+
+  .replace(
+    /'/g,
+    "&#039;"
+  );
+
+}
+
+
+/* =====================================
+   페이지 시작
+===================================== */
+
+window.addEventListener(
+  "load",
+  function(){
+
+    showStudent();
+
+  }
 );
 
-}
 
+/* =====================================
+   페이지 종료
+===================================== */
 
+window.addEventListener(
+  "beforeunload",
+  function(){
 
-let cameraId =
-cameras[0].id;
+    stopCamera();
 
-
-
-// 아이폰 후면 우선
-
-if(cameras.length > 1){
-
-cameraId =
-cameras[cameras.length-1].id;
-
-}
-
-
-
-await html5QrCode.start(
-
-cameraId,
-
-{
-fps:20,
-
-qrbox:{
-width:280,
-height:280
-},
-
-aspectRatio:1.0
-
-},
-
-
-onScanSuccess,
-
-
-function(){
-
-}
-
+  }
 );
-
-
-}catch(error){
-
-document.getElementById("error").innerText =
-"❌ 카메라 오류\n"+error;
-
-}
-
-
-}
-
-
-
-
-async function onScanSuccess(decodedText){
-
-
-
-try{
-
-await html5QrCode.stop();
-
-}catch(e){}
-
-
-
-const data = {
-
-studentNumber:studentNumber,
-
-studentName:studentName,
-
-action:action,
-
-qr:decodedText
-
-};
-
-
-
-fetch(
-
-WEB_APP_URL,
-
-{
-
-method:"POST",
-
-body:JSON.stringify(data)
-
-}
-
-)
-
-.then(
-response=>response.json()
-)
-
-.then(
-
-result=>{
-
-
-document.getElementById("result").innerHTML =
-`
-✅ QR 인증 완료<br>
-${result.message}
-`;
-
-
-}
-
-)
-
-
-.catch(
-
-error=>{
-
-
-document.getElementById("error").innerText =
-"❌ 저장 오류\n"+error;
-
-
-}
-
-);
-
-
-
-}
-
-
 
 </script>
 
 </body>
 </html>
+```
