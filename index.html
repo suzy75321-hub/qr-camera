@@ -1,97 +1,57 @@
 <!DOCTYPE html>
-
 <html lang="ko">
-
 <head>
-
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>QR 인증</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
-
 body{
-
-font-family:Arial,sans-serif;
-
-text-align:center;
-
-padding:20px;
-
-background:#f5f7fb;
-
+  font-family:Arial,sans-serif;
+  text-align:center;
+  padding:20px;
+  background:#f5f7fb;
 }
 
 .box{
-
-max-width:420px;
-
-margin:auto;
-
-background:white;
-
-padding:25px;
-
-border-radius:20px;
-
-box-shadow:0 4px 15px rgba(0,0,0,.1);
-
+  max-width:420px;
+  margin:auto;
+  background:white;
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 4px 15px rgba(0,0,0,.1);
 }
 
 button{
-
-width:100%;
-
-padding:16px;
-
-margin-top:15px;
-
-border:0;
-
-border-radius:12px;
-
-background:#333;
-
-color:white;
-
-font-size:18px;
-
-font-weight:bold;
-
+  width:100%;
+  padding:16px;
+  margin-top:15px;
+  border:0;
+  border-radius:12px;
+  background:#333;
+  color:white;
+  font-size:18px;
+  font-weight:bold;
 }
 
 #reader{
-
-margin-top:20px;
-
+  margin-top:20px;
 }
 
 #result{
-
-margin-top:15px;
-
-color:green;
-
-font-weight:bold;
-
+  margin-top:15px;
+  color:green;
+  font-weight:bold;
 }
 
 #error{
-
-margin-top:15px;
-
-color:red;
-
-white-space:pre-line;
-
+  margin-top:15px;
+  color:red;
+  white-space:pre-line;
 }
-
 </style>
-
 </head>
 
 <body>
@@ -101,21 +61,15 @@ white-space:pre-line;
 <h1>📷 QR 인증</h1>
 
 <p>
-
 교실 QR을 촬영해주세요.<br>
-
 QR 촬영 시간이<br>
-
 실제 등교/복귀 시간으로 기록됩니다.
-
 </p>
 
 <div id="studentInfo"></div>
 
 <button onclick="startCamera()">
-
 📷 카메라 시작
-
 </button>
 
 <div id="reader"></div>
@@ -129,33 +83,24 @@ QR 촬영 시간이<br>
 <script>
 
 const params =
-
 new URLSearchParams(location.search);
 
 const studentNumber =
-
 params.get("studentNumber") || "";
 
 const studentName =
-
 params.get("studentName") || "";
 
 const action =
-
 params.get("action") || "";
 
 document.getElementById("studentInfo").innerHTML =
-
 `
-
 <b>${studentNumber} ${studentName}</b><br>
-
 ${action}
-
 `;
 
 const WEB_APP_URL =
-
 "https://script.google.com/macros/s/AKfycbwjXwujbqVUqpDpxdjlqdOTzPLu-6sLA0bMKnVKuc_cWpkC_R99fLfI49ZfvjHTUwxI/exec";
 
 let html5QrCode;
@@ -165,33 +110,26 @@ async function startCamera(){
 try{
 
 html5QrCode =
-
 new Html5Qrcode("reader");
 
 const cameras =
-
 await Html5Qrcode.getCameras();
 
 if(!cameras.length){
 
 throw new Error(
-
 "카메라를 찾을 수 없습니다."
-
 );
 
 }
 
 let cameraId =
-
 cameras[0].id;
 
 // 아이폰 후면 우선
-
 if(cameras.length > 1){
 
 cameraId =
-
 cameras[cameras.length-1].id;
 
 }
@@ -201,15 +139,11 @@ await html5QrCode.start(
 cameraId,
 
 {
-
 fps:20,
 
 qrbox:{
-
 width:280,
-
 height:280
-
 },
 
 aspectRatio:1.0
@@ -227,7 +161,6 @@ function(){
 }catch(error){
 
 document.getElementById("error").innerText =
-
 "❌ 카메라 오류\n"+error;
 
 }
@@ -279,13 +212,9 @@ response=>response.json()
 result=>{
 
 document.getElementById("result").innerHTML =
-
 `
-
 ✅ QR 인증 완료<br>
-
 ${result.message}
-
 `;
 
 }
@@ -297,7 +226,6 @@ ${result.message}
 error=>{
 
 document.getElementById("error").innerText =
-
 "❌ 저장 오류\n"+error;
 
 }
@@ -309,5 +237,4 @@ document.getElementById("error").innerText =
 </script>
 
 </body>
-
 </html>
