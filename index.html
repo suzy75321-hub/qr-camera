@@ -1,227 +1,196 @@
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
+  <meta charset="UTF-8">
 
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
->
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
 
-<title>수지쌤 QR 출석</title>
+  <title>수지쌤 QR 테스트</title>
 
-<!-- jsQR -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-<style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #111827;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
 
-* {
-  box-sizing: border-box;
-}
+    .wrap {
+      width: 100%;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100%;
-}
+    h1 {
+      margin: 10px 0;
+      font-size: 26px;
+    }
 
-body {
-  background: #111827;
-  color: white;
-  font-family:
-    "Noto Sans KR",
-    "Malgun Gothic",
-    Arial,
-    sans-serif;
-}
+    .guide {
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
 
-.page {
-  width: 100%;
-  min-height: 100vh;
-  padding: 18px;
-  display: flex;
-  justify-content: center;
-}
+    .camera {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      border-radius: 22px;
+      background: #000;
+    }
 
-.card {
-  width: 100%;
-  max-width: 520px;
-  text-align: center;
-}
+    #video {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 300px;
+      background: #000;
+      object-fit: cover;
+    }
 
-h1 {
-  margin: 8px 0 5px;
-  font-size: 27px;
-}
+    .frame {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      top: 12%;
+      bottom: 12%;
+      border: 3px solid #22c55e;
+      border-radius: 18px;
+      pointer-events: none;
+    }
 
-.subtitle {
-  color: #cbd5e1;
-  font-size: 14px;
-  margin-bottom: 18px;
-}
+    .line {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      top: 50%;
+      height: 3px;
+      background: red;
+      box-shadow: 0 0 12px red;
+      animation: scan 1.5s infinite alternate;
+      pointer-events: none;
+    }
 
-.camera {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  border-radius: 22px;
-  background: #000;
-}
+    @keyframes scan {
+      from {
+        transform: translateY(-110px);
+      }
 
-#video {
-  display: block;
-  width: 100%;
-  height: auto;
-  min-height: 300px;
-  object-fit: cover;
-  background: #000;
-}
+      to {
+        transform: translateY(110px);
+      }
+    }
 
-#canvas {
-  display: none;
-}
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 17px;
+      border: 0;
+      border-radius: 16px;
+      background: #2563eb;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+    }
 
-.frame {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 12%;
-  bottom: 12%;
-  border: 3px solid #22c55e;
-  border-radius: 20px;
-  pointer-events: none;
-}
+    #stop {
+      display: none;
+      background: #475569;
+    }
 
-.line {
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 50%;
-  height: 3px;
-  background: #ef4444;
-  box-shadow: 0 0 12px #ef4444;
-  animation: scan 1.7s ease-in-out infinite alternate;
-  pointer-events: none;
-}
+    #result {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 16px;
+      background: #1e293b;
+      min-height: 70px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.6;
+    }
 
-@keyframes scan {
+    .success {
+      background: #166534 !important;
+    }
 
-  from {
-    transform: translateY(-100px);
-  }
-
-  to {
-    transform: translateY(100px);
-  }
-
-}
-
-button {
-  width: 100%;
-  padding: 17px;
-  margin-top: 17px;
-  border: 0;
-  border-radius: 16px;
-  background: #2563eb;
-  color: white;
-  font-size: 18px;
-  font-weight: 800;
-}
-
-#stop {
-  display: none;
-  background: #475569;
-}
-
-#status {
-  margin-top: 15px;
-  padding: 15px;
-  border-radius: 15px;
-  background: #1e293b;
-  line-height: 1.6;
-  word-break: break-all;
-}
-
-.success {
-  background: #166534 !important;
-}
-
-.error {
-  background: #991b1b !important;
-}
-
-</style>
+    .error {
+      background: #991b1b !important;
+    }
+  </style>
 </head>
-
 
 <body>
 
-<div class="page">
+<div class="wrap">
 
-<div class="card">
+  <h1>📷 QR 인식 테스트</h1>
 
-<h1>📷 수지쌤 저 왔어요</h1>
+  <div class="guide">
+    아무 QR이나 화면에 띄워주세요.<br>
+    QR을 초록색 영역 안에 크게 맞춰주세요.
+  </div>
 
-<div class="subtitle">
-교실 QR을 초록색 네모 안에 맞춰주세요.
-</div>
+  <div class="camera">
 
+    <video
+      id="video"
+      autoplay
+      muted
+      playsinline>
+    </video>
 
-<div class="camera">
+    <div class="frame"></div>
+    <div class="line"></div>
 
-<video
-  id="video"
-  playsinline
-  muted
-  autoplay>
-</video>
+  </div>
 
-<canvas id="canvas"></canvas>
+  <button
+    id="start"
+    onclick="startCamera()">
+    📷 카메라 시작
+  </button>
 
-<div class="frame"></div>
+  <button
+    id="stop"
+    onclick="stopCamera()">
+    카메라 닫기
+  </button>
 
-<div class="line"></div>
-
-</div>
-
-
-<button
-  id="start"
-  onclick="startCamera()">
-📷 카메라 시작
-</button>
-
-
-<button
-  id="stop"
-  onclick="stopCamera()">
-카메라 닫기
-</button>
-
-
-<div id="status">
-카메라 시작 버튼을 눌러주세요.
-</div>
-
-</div>
+  <div id="result">
+    카메라 시작을 눌러주세요.
+  </div>
 
 </div>
 
 
 <script>
 
-/* =====================================
-   변수
-===================================== */
+/*
+ * ZXing 브라우저 라이브러리
+ *
+ * 여러 CDN을 순서대로 시도한다.
+ */
 
-let stream = null;
+const ZXING_URL =
+  "https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js";
 
-let scanning = false;
 
-let lastScanTime = 0;
+let scriptLoaded = false;
+let codeReader = null;
+let controls = null;
+let running = false;
+let found = false;
 
 
 /* =====================================
@@ -231,19 +200,8 @@ let lastScanTime = 0;
 const video =
   document.getElementById("video");
 
-const canvas =
-  document.getElementById("canvas");
-
-const ctx =
-  canvas.getContext(
-    "2d",
-    {
-      willReadFrequently: true
-    }
-  );
-
-const statusBox =
-  document.getElementById("status");
+const result =
+  document.getElementById("result");
 
 const startButton =
   document.getElementById("start");
@@ -252,20 +210,93 @@ const stopButton =
   document.getElementById("stop");
 
 
-/* =====================================
-   상태 표시
-===================================== */
-
-function status(
+function show(
   text,
   type
 ) {
 
-  statusBox.textContent =
+  result.textContent =
     text;
 
-  statusBox.className =
+  result.className =
     type || "";
+
+}
+
+
+/* =====================================
+   ZXing 로드
+===================================== */
+
+function loadZXing() {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      if (
+        window.ZXingBrowser
+      ) {
+
+        scriptLoaded = true;
+
+        resolve();
+
+        return;
+      }
+
+
+      const script =
+        document.createElement(
+          "script"
+        );
+
+
+      script.src =
+        ZXING_URL;
+
+
+      script.onload =
+        function() {
+
+          if (
+            window.ZXingBrowser
+          ) {
+
+            scriptLoaded = true;
+
+            resolve();
+
+          } else {
+
+            reject(
+              new Error(
+                "ZXingBrowser를 찾을 수 없습니다."
+              )
+            );
+
+          }
+
+        };
+
+
+      script.onerror =
+        function() {
+
+          reject(
+            new Error(
+              "ZXing 라이브러리를 불러오지 못했습니다."
+            )
+          );
+
+        };
+
+
+      document.head.appendChild(
+        script
+      );
+
+    }
+  );
 
 }
 
@@ -276,63 +307,148 @@ function status(
 
 async function startCamera() {
 
-  if (scanning) {
+  if (running) {
     return;
   }
 
 
-  status(
-    "카메라를 준비하는 중..."
+  found = false;
+
+
+  show(
+    "ZXing QR 인식기를 준비하는 중..."
   );
 
 
   try {
 
+    await loadZXing();
+
+
     /*
-     * 휴대폰은 후면 카메라 우선
+     * ZXing QR 전용 리더
      */
 
-    stream =
-      await navigator.mediaDevices.getUserMedia({
-
-        video: {
-
-          facingMode: {
-            ideal: "environment"
-          },
-
-          width: {
-            ideal: 1920
-          },
-
-          height: {
-            ideal: 1080
-          }
-
-        },
-
-        audio: false
-
-      });
+    codeReader =
+      new ZXingBrowser.BrowserQRCodeReader();
 
 
-    video.srcObject =
-      stream;
+    /*
+     * 사용 가능한 카메라 목록 확인
+     */
+
+    const devices =
+      await ZXingBrowser.BrowserCodeReader
+        .listVideoInputDevices();
 
 
-    video.setAttribute(
-      "playsinline",
-      "true"
+    if (
+      !devices ||
+      devices.length === 0
+    ) {
+
+      throw new Error(
+        "카메라를 찾을 수 없습니다."
+      );
+
+    }
+
+
+    /*
+     * 후면 카메라 선택
+     */
+
+    let deviceId =
+      devices[0].deviceId;
+
+
+    for (
+      const device
+      of devices
+    ) {
+
+      const label =
+        String(
+          device.label || ""
+        ).toLowerCase();
+
+
+      if (
+        label.includes("back") ||
+        label.includes("rear") ||
+        label.includes("environment") ||
+        label.includes("후면")
+      ) {
+
+        deviceId =
+          device.deviceId;
+
+        break;
+
+      }
+
+    }
+
+
+    show(
+      "📷 카메라가 켜졌습니다.\n\nQR을 비춰주세요."
     );
 
 
-    video.muted = true;
+    /*
+     * 선택한 카메라로 QR 읽기 시작
+     */
+
+    controls =
+      await codeReader.decodeFromVideoDevice(
+
+        deviceId,
+
+        video,
+
+        function(
+          resultObject,
+          error
+        ) {
+
+          if (found) {
+            return;
+          }
 
 
-    await video.play();
+          if (
+            resultObject
+          ) {
+
+            found = true;
 
 
-    scanning = true;
+            const text =
+              resultObject
+                .getText();
+
+
+            show(
+
+              "✅ QR 인식 성공!\n\n" +
+              "QR 내용:\n" +
+              text,
+
+              "success"
+
+            );
+
+
+            stopCamera();
+
+          }
+
+        }
+
+      );
+
+
+    running = true;
 
 
     startButton.style.display =
@@ -342,201 +458,30 @@ async function startCamera() {
       "block";
 
 
-    status(
-      "📷 카메라가 켜졌습니다.\n\n" +
-      "QR을 화면 가까이 가져와 주세요."
-    );
-
-
-    requestAnimationFrame(
-      scan
-    );
-
-
   } catch (error) {
 
     console.error(
+      "ZXing 오류:",
       error
     );
 
 
-    status(
-      "❌ 카메라를 시작하지 못했습니다.\n\n" +
-      error.message,
+    running = false;
+
+
+    show(
+
+      "❌ QR 카메라를 시작하지 못했습니다.\n\n" +
+      (
+        error.message ||
+        error
+      ),
+
       "error"
+
     );
 
   }
-
-}
-
-
-/* =====================================
-   QR 스캔
-===================================== */
-
-function scan(
-  timestamp
-) {
-
-  if (!scanning) {
-    return;
-  }
-
-
-  /*
-   * 너무 자주 분석하지 않음
-   */
-
-  if (
-    timestamp -
-    lastScanTime <
-    120
-  ) {
-
-    requestAnimationFrame(
-      scan
-    );
-
-    return;
-  }
-
-
-  lastScanTime =
-    timestamp;
-
-
-  if (
-    video.readyState >=
-    video.HAVE_ENOUGH_DATA
-  ) {
-
-    const width =
-      video.videoWidth;
-
-    const height =
-      video.videoHeight;
-
-
-    if (
-      width > 0 &&
-      height > 0
-    ) {
-
-      /*
-       * 카메라 전체 영상을
-       * 캔버스에 복사
-       */
-
-      canvas.width =
-        width;
-
-      canvas.height =
-        height;
-
-
-      ctx.drawImage(
-        video,
-        0,
-        0,
-        width,
-        height
-      );
-
-
-      try {
-
-        const imageData =
-          ctx.getImageData(
-            0,
-            0,
-            width,
-            height
-          );
-
-
-        /*
-         * jsQR로 직접 해석
-         */
-
-        const code =
-          jsQR(
-            imageData.data,
-            imageData.width,
-            imageData.height,
-            {
-              inversionAttempts:
-                "attemptBoth"
-            }
-          );
-
-
-        if (code) {
-
-          qrFound(
-            code.data
-          );
-
-          return;
-
-        }
-
-      } catch (error) {
-
-        console.error(
-          "QR 분석 오류:",
-          error
-        );
-
-      }
-
-    }
-
-  }
-
-
-  requestAnimationFrame(
-    scan
-  );
-
-}
-
-
-/* =====================================
-   QR 발견
-===================================== */
-
-function qrFound(
-  value
-) {
-
-  scanning = false;
-
-
-  console.log(
-    "QR 발견:",
-    value
-  );
-
-
-  /*
-   * 여기서는 아직 출석 저장을 하지 않는다.
-   * 실제 QR 값을 먼저 확인한다.
-   */
-
-  status(
-
-    "✅ QR 인식 성공!\n\n" +
-    "QR 내용:\n" +
-    value,
-
-    "success"
-
-  );
-
-
-  stopCamera();
-
 
 }
 
@@ -547,28 +492,62 @@ function qrFound(
 
 function stopCamera() {
 
-  scanning = false;
+  try {
+
+    if (controls) {
+
+      controls.stop();
+
+    }
+
+  } catch (e) {}
 
 
-  if (stream) {
+  try {
 
-    stream
-      .getTracks()
-      .forEach(
-        function(track) {
+    if (
+      codeReader &&
+      codeReader.reset
+    ) {
 
-          track.stop();
+      codeReader.reset();
 
-        }
-      );
+    }
 
-    stream = null;
+  } catch (e) {}
+
+
+  if (
+    video.srcObject
+  ) {
+
+    const tracks =
+      video.srcObject
+        .getTracks();
+
+
+    tracks.forEach(
+      function(track) {
+
+        track.stop();
+
+      }
+    );
+
+    video.srcObject =
+      null;
 
   }
 
 
-  video.srcObject =
+  controls =
     null;
+
+  codeReader =
+    null;
+
+  running =
+    false;
 
 
   startButton.style.display =
@@ -581,7 +560,7 @@ function stopCamera() {
 
 
 /* =====================================
-   페이지 종료
+   종료
 ===================================== */
 
 window.addEventListener(
@@ -597,4 +576,3 @@ window.addEventListener(
 
 </body>
 </html>
-```
