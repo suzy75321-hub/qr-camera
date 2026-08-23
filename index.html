@@ -1,169 +1,127 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  >
+<title>수지쌤 저 왔어요</title>
 
-  <title>수지쌤 QR 테스트</title>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #111827;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+}
 
-    .wrap {
-      width: 100%;
-      max-width: 520px;
-      margin: 0 auto;
-      padding: 20px;
-    }
+body {
+  background: #111827;
+  color: #fff;
+  font-family:
+    Arial,
+    "Malgun Gothic",
+    sans-serif;
+}
 
-    h1 {
-      margin: 10px 0;
-      font-size: 26px;
-    }
+.wrap {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 18px;
+  text-align: center;
+}
 
-    .guide {
-      color: #cbd5e1;
-      line-height: 1.6;
-      margin-bottom: 18px;
-    }
+h1 {
+  margin: 8px 0;
+  font-size: 28px;
+}
 
-    .camera {
-      position: relative;
-      width: 100%;
-      overflow: hidden;
-      border-radius: 22px;
-      background: #000;
-    }
+.info {
+  margin: 8px 0 18px;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
 
-    #video {
-      display: block;
-      width: 100%;
-      height: auto;
-      min-height: 300px;
-      background: #000;
-      object-fit: cover;
-    }
+#reader {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #000;
+}
 
-    .frame {
-      position: absolute;
-      left: 8%;
-      right: 8%;
-      top: 12%;
-      bottom: 12%;
-      border: 3px solid #22c55e;
-      border-radius: 18px;
-      pointer-events: none;
-    }
+#reader video {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
 
-    .line {
-      position: absolute;
-      left: 10%;
-      right: 10%;
-      top: 50%;
-      height: 3px;
-      background: red;
-      box-shadow: 0 0 12px red;
-      animation: scan 1.5s infinite alternate;
-      pointer-events: none;
-    }
+button {
+  width: 100%;
+  margin-top: 18px;
+  padding: 17px;
+  border: 0;
+  border-radius: 16px;
+  background: #2563eb;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+}
 
-    @keyframes scan {
-      from {
-        transform: translateY(-110px);
-      }
+#stop {
+  display: none;
+  background: #475569;
+}
 
-      to {
-        transform: translateY(110px);
-      }
-    }
+#result {
+  margin-top: 18px;
+  padding: 18px;
+  min-height: 70px;
+  border-radius: 16px;
+  background: #1e293b;
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+}
 
-    button {
-      width: 100%;
-      margin-top: 18px;
-      padding: 17px;
-      border: 0;
-      border-radius: 16px;
-      background: #2563eb;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-    }
+.ok {
+  background: #166534 !important;
+}
 
-    #stop {
-      display: none;
-      background: #475569;
-    }
+.bad {
+  background: #991b1b !important;
+}
 
-    #result {
-      margin-top: 18px;
-      padding: 18px;
-      border-radius: 16px;
-      background: #1e293b;
-      min-height: 70px;
-      white-space: pre-wrap;
-      word-break: break-all;
-      line-height: 1.6;
-    }
-
-    .success {
-      background: #166534 !important;
-    }
-
-    .error {
-      background: #991b1b !important;
-    }
-  </style>
+.hidden {
+  display: none !important;
+}
+</style>
 </head>
 
 <body>
 
 <div class="wrap">
 
-  <h1>📷 QR 인식 테스트</h1>
+  <h1>📷 수지쌤 저 왔어요</h1>
 
-  <div class="guide">
-    아무 QR이나 화면에 띄워주세요.<br>
-    QR을 초록색 영역 안에 크게 맞춰주세요.
+  <div class="info">
+    QR을 카메라 가운데에 크게 맞춰주세요.
   </div>
 
-  <div class="camera">
+  <div id="reader"></div>
 
-    <video
-      id="video"
-      autoplay
-      muted
-      playsinline>
-    </video>
-
-    <div class="frame"></div>
-    <div class="line"></div>
-
-  </div>
-
-  <button
-    id="start"
-    onclick="startCamera()">
+  <button id="start" onclick="startScanner()">
     📷 카메라 시작
   </button>
 
-  <button
-    id="stop"
-    onclick="stopCamera()">
+  <button id="stop" onclick="stopScanner()">
     카메라 닫기
   </button>
 
@@ -173,221 +131,147 @@
 
 </div>
 
-
 <script>
 
-/*
- * ZXing 브라우저 라이브러리
- *
- * 여러 CDN을 순서대로 시도한다.
- */
+const QR_VALUE =
+  "SUZY_CLASSROOM_QR_2026_FIXED_01";
 
-const ZXING_URL =
-  "https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js";
-
-
-let scriptLoaded = false;
-let codeReader = null;
-let controls = null;
-let running = false;
-let found = false;
+let video = null;
+let stream = null;
+let barcodeDetector = null;
+let scanning = false;
+let htmlScanner = null;
+let success = false;
 
 
-/* =====================================
-   화면
-===================================== */
+/* ================================
+   화면 표시
+================================ */
 
-const video =
-  document.getElementById("video");
+function show(text, type) {
 
-const result =
-  document.getElementById("result");
+  const box =
+    document.getElementById("result");
 
-const startButton =
-  document.getElementById("start");
+  box.textContent = text;
 
-const stopButton =
-  document.getElementById("stop");
-
-
-function show(
-  text,
-  type
-) {
-
-  result.textContent =
-    text;
-
-  result.className =
-    type || "";
-
+  box.className = type || "";
 }
 
 
-/* =====================================
-   ZXing 로드
-===================================== */
+/* ================================
+   카메라 권한
+================================ */
 
-function loadZXing() {
+async function getCamera() {
 
-  return new Promise(
-    function(resolve, reject) {
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
 
-      if (
-        window.ZXingBrowser
-      ) {
+    throw new Error(
+      "이 브라우저에서는 카메라 기능을 사용할 수 없습니다."
+    );
 
-        scriptLoaded = true;
-
-        resolve();
-
-        return;
-      }
-
-
-      const script =
-        document.createElement(
-          "script"
-        );
-
-
-      script.src =
-        ZXING_URL;
-
-
-      script.onload =
-        function() {
-
-          if (
-            window.ZXingBrowser
-          ) {
-
-            scriptLoaded = true;
-
-            resolve();
-
-          } else {
-
-            reject(
-              new Error(
-                "ZXingBrowser를 찾을 수 없습니다."
-              )
-            );
-
-          }
-
-        };
-
-
-      script.onerror =
-        function() {
-
-          reject(
-            new Error(
-              "ZXing 라이브러리를 불러오지 못했습니다."
-            )
-          );
-
-        };
-
-
-      document.head.appendChild(
-        script
-      );
-
-    }
-  );
-
-}
-
-
-/* =====================================
-   카메라 시작
-===================================== */
-
-async function startCamera() {
-
-  if (running) {
-    return;
   }
 
+  return navigator.mediaDevices.getUserMedia({
 
-  found = false;
+    video: {
+      facingMode: {
+        ideal: "environment"
+      },
+
+      width: {
+        ideal: 1920
+      },
+
+      height: {
+        ideal: 1080
+      }
+    },
+
+    audio: false
+
+  });
+
+}
 
 
-  show(
-    "ZXing QR 인식기를 준비하는 중..."
-  );
+/* ================================
+   BarcodeDetector
+================================ */
+
+async function startBarcodeDetector() {
+
+  if (
+    !("BarcodeDetector" in window)
+  ) {
+
+    return false;
+
+  }
 
 
   try {
 
-    await loadZXing();
-
-
-    /*
-     * ZXing QR 전용 리더
-     */
-
-    codeReader =
-      new ZXingBrowser.BrowserQRCodeReader();
-
-
-    /*
-     * 사용 가능한 카메라 목록 확인
-     */
-
-    const devices =
-      await ZXingBrowser.BrowserCodeReader
-        .listVideoInputDevices();
+    const formats =
+      await BarcodeDetector.getSupportedFormats();
 
 
     if (
-      !devices ||
-      devices.length === 0
+      !formats.includes("qr_code")
     ) {
 
-      throw new Error(
-        "카메라를 찾을 수 없습니다."
-      );
+      return false;
 
     }
 
 
-    /*
-     * 후면 카메라 선택
-     */
-
-    let deviceId =
-      devices[0].deviceId;
+    barcodeDetector =
+      new BarcodeDetector({
+        formats: ["qr_code"]
+      });
 
 
-    for (
-      const device
-      of devices
-    ) {
-
-      const label =
-        String(
-          device.label || ""
-        ).toLowerCase();
+    stream =
+      await getCamera();
 
 
-      if (
-        label.includes("back") ||
-        label.includes("rear") ||
-        label.includes("environment") ||
-        label.includes("후면")
-      ) {
+    video =
+      document.createElement("video");
 
-        deviceId =
-          device.deviceId;
 
-        break;
+    video.autoplay = true;
+    video.muted = true;
+    video.playsInline = true;
 
-      }
 
-    }
+    video.srcObject =
+      stream;
+
+
+    video.style.width =
+      "100%";
+
+    video.style.display =
+      "block";
+
+
+    const reader =
+      document.getElementById("reader");
+
+
+    reader.innerHTML = "";
+
+    reader.appendChild(video);
+
+
+    await video.play();
+
+
+    scanning = true;
 
 
     show(
@@ -395,179 +279,433 @@ async function startCamera() {
     );
 
 
-    /*
-     * 선택한 카메라로 QR 읽기 시작
-     */
-
-    controls =
-      await codeReader.decodeFromVideoDevice(
-
-        deviceId,
-
-        video,
-
-        function(
-          resultObject,
-          error
-        ) {
-
-          if (found) {
-            return;
-          }
+    detectBarcode();
 
 
-          if (
-            resultObject
-          ) {
-
-            found = true;
-
-
-            const text =
-              resultObject
-                .getText();
-
-
-            show(
-
-              "✅ QR 인식 성공!\n\n" +
-              "QR 내용:\n" +
-              text,
-
-              "success"
-
-            );
-
-
-            stopCamera();
-
-          }
-
-        }
-
-      );
-
-
-    running = true;
-
-
-    startButton.style.display =
-      "none";
-
-    stopButton.style.display =
-      "block";
+    return true;
 
 
   } catch (error) {
 
-    console.error(
-      "ZXing 오류:",
+    console.log(
+      "BarcodeDetector 실패:",
       error
     );
 
 
-    running = false;
+    stopCameraOnly();
 
-
-    show(
-
-      "❌ QR 카메라를 시작하지 못했습니다.\n\n" +
-      (
-        error.message ||
-        error
-      ),
-
-      "error"
-
-    );
+    return false;
 
   }
 
 }
 
 
-/* =====================================
-   카메라 종료
-===================================== */
+/* ================================
+   BarcodeDetector 반복 검색
+================================ */
 
-function stopCamera() {
+async function detectBarcode() {
 
-  try {
+  if (
+    !scanning ||
+    !barcodeDetector ||
+    !video
+  ) {
 
-    if (controls) {
+    return;
 
-      controls.stop();
-
-    }
-
-  } catch (e) {}
+  }
 
 
   try {
 
     if (
-      codeReader &&
-      codeReader.reset
+      video.readyState >=
+      video.HAVE_CURRENT_DATA
     ) {
 
-      codeReader.reset();
+      const codes =
+        await barcodeDetector.detect(
+          video
+        );
+
+
+      if (
+        codes &&
+        codes.length > 0
+      ) {
+
+        const value =
+          codes[0].rawValue;
+
+
+        if (value) {
+
+          qrSuccess(
+            value
+          );
+
+          return;
+
+        }
+
+      }
 
     }
 
-  } catch (e) {}
+  } catch (error) {
 
-
-  if (
-    video.srcObject
-  ) {
-
-    const tracks =
-      video.srcObject
-        .getTracks();
-
-
-    tracks.forEach(
-      function(track) {
-
-        track.stop();
-
-      }
+    console.log(
+      "QR 탐색:",
+      error
     );
-
-    video.srcObject =
-      null;
 
   }
 
 
-  controls =
-    null;
+  if (scanning) {
 
-  codeReader =
-    null;
+    setTimeout(
+      detectBarcode,
+      100
+    );
 
-  running =
-    false;
-
-
-  startButton.style.display =
-    "block";
-
-  stopButton.style.display =
-    "none";
+  }
 
 }
 
 
-/* =====================================
-   종료
-===================================== */
+/* ================================
+   html5-qrcode 백업
+================================ */
+
+async function startHtml5Qr() {
+
+  stopCameraOnly();
+
+
+  if (
+    typeof Html5Qrcode ===
+    "undefined"
+  ) {
+
+    throw new Error(
+      "QR 인식 모듈을 불러오지 못했습니다."
+    );
+
+  }
+
+
+  htmlScanner =
+    new Html5Qrcode(
+      "reader"
+    );
+
+
+  await htmlScanner.start(
+
+    {
+      facingMode: {
+        ideal: "environment"
+      }
+    },
+
+    {
+      fps: 20,
+
+      qrbox: function(
+        width,
+        height
+      ) {
+
+        const size =
+          Math.floor(
+            Math.min(
+              width,
+              height
+            ) * 0.8
+          );
+
+        return {
+          width: Math.max(
+            220,
+            Math.min(
+              size,
+              400
+            )
+          ),
+
+          height: Math.max(
+            220,
+            Math.min(
+              size,
+              400
+            )
+          )
+        };
+
+      },
+
+      aspectRatio: 1.0,
+
+      disableFlip: false
+
+    },
+
+    function(decodedText) {
+
+      qrSuccess(
+        decodedText
+      );
+
+    },
+
+    function() {
+
+      /* QR 찾는 중에는 아무것도 표시하지 않음 */
+
+    }
+
+  );
+
+
+  scanning = true;
+
+
+  document
+    .getElementById("start")
+    .style.display = "none";
+
+
+  document
+    .getElementById("stop")
+    .style.display = "block";
+
+
+  show(
+    "📷 카메라가 켜졌습니다.\n\nQR을 비춰주세요."
+  );
+
+}
+
+
+/* ================================
+   전체 시작
+================================ */
+
+async function startScanner() {
+
+  if (scanning) {
+    return;
+  }
+
+
+  success = false;
+
+
+  show(
+    "카메라를 준비하는 중..."
+  );
+
+
+  /*
+   * 1순위:
+   * 브라우저 자체 QR 인식
+   */
+
+  const nativeStarted =
+    await startBarcodeDetector();
+
+
+  if (nativeStarted) {
+
+    document
+      .getElementById("start")
+      .style.display = "none";
+
+
+    document
+      .getElementById("stop")
+      .style.display = "block";
+
+
+    return;
+
+  }
+
+
+  /*
+   * 2순위:
+   * html5-qrcode
+   */
+
+  try {
+
+    await startHtml5Qr();
+
+  } catch (error) {
+
+    console.error(
+      "QR 시작 실패:",
+      error
+    );
+
+
+    stopScanner();
+
+
+    show(
+      "❌ QR 카메라를 시작하지 못했습니다.\n\n" +
+      error.message,
+      "bad"
+    );
+
+  }
+
+}
+
+
+/* ================================
+   QR 인식 성공
+================================ */
+
+function qrSuccess(
+  value
+) {
+
+  if (success) {
+    return;
+  }
+
+
+  success = true;
+
+  scanning = false;
+
+
+  console.log(
+    "QR 인식 성공:",
+    value
+  );
+
+
+  /*
+   * 테스트 단계에서는
+   * 출석 처리를 하지 않고
+   * QR의 실제 내용을 보여준다.
+   */
+
+  show(
+
+    "✅ QR 인식 성공!\n\n" +
+    "QR 내용:\n" +
+    value,
+
+    "ok"
+
+  );
+
+
+  stopScanner();
+
+
+}
+
+
+/* ================================
+   카메라만 종료
+================================ */
+
+function stopCameraOnly() {
+
+  scanning = false;
+
+
+  if (stream) {
+
+    stream
+      .getTracks()
+      .forEach(
+        function(track) {
+          track.stop();
+        }
+      );
+
+    stream = null;
+
+  }
+
+
+  if (video) {
+
+    video.srcObject =
+      null;
+
+    video = null;
+
+  }
+
+
+  if (htmlScanner) {
+
+    try {
+
+      htmlScanner
+        .stop()
+        .catch(
+          function() {}
+        );
+
+    } catch (e) {}
+
+    htmlScanner = null;
+
+  }
+
+
+  barcodeDetector =
+    null;
+
+}
+
+
+/* ================================
+   전체 종료
+================================ */
+
+function stopScanner() {
+
+  stopCameraOnly();
+
+
+  document
+    .getElementById("reader")
+    .innerHTML = "";
+
+
+  document
+    .getElementById("start")
+    .style.display = "block";
+
+
+  document
+    .getElementById("stop")
+    .style.display = "none";
+
+}
+
+
+/* ================================
+   페이지 종료
+================================ */
 
 window.addEventListener(
   "beforeunload",
   function() {
 
-    stopCamera();
+    stopScanner();
 
   }
 );
@@ -576,3 +714,4 @@ window.addEventListener(
 
 </body>
 </html>
+```
